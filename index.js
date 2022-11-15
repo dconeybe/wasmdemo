@@ -30,10 +30,10 @@ async function onRunClick() {
     log(`add(${num1}, ${num2}) returned ${addResult}`);
 
     const buf = new Uint8Array(wasmInstance.exports.memory.buffer)
-    const { written: numBytes } = new TextEncoder().encodeInto(textToReverse, buf);
+    const { written: numBytes } = new TextEncoder("utf8").encodeInto(textToReverse, buf);
     log(`Calling reverse("${textToReverse}", ${numBytes})`);
     wasmInstance.exports.reverse_string(buf, numBytes);
-    const reversedText = new TextDecoder().decode(buf.subarray(0, numBytes));
+    const reversedText = new TextDecoder("ascii").decode(buf.subarray(0, numBytes));
     log(`Reversed string: ${reversedText}`);
   } catch (e) {
     log(`ERROR: ${e}`);
