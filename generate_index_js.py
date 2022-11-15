@@ -1,4 +1,6 @@
+import datetime
 import base64
+import hashlib
 import pathlib
 
 from absl import app
@@ -16,9 +18,21 @@ def main(argv):
 
   wasm = wasm_file.read_bytes()
   wasm_base64 = base64.b64encode(wasm).decode("US-ASCII")
+  wasm_md5 = hashlib.md5()
+  wasm_md5.update(wasm)
+  wasm_md5_hexdigest = wasm_md5.hexdigest()
+  del wasm_md5
+
+  date_text = datetime.datetime.now().strftime("%c")
 
   src = src_file.read_text("utf8")
-  src_modified = src.replace("REPLACE_WITH_BASE64", wasm_base64)
+  src_modified = (
+    src
+    .replace("REPLACE_WITH_BASE64", wasm_base64)
+    .replace("REPLACE_WITH_DATE", date_text)
+    .replace("REPLACE_WITH_SIZE", f"{str(len(wasm))} bytes")
+    .replace("REPLACE_WITH_MD5", wasm_md5_hexdigest)
+  )
 
   dest_file.write_text(src_modified, "utf8")
 

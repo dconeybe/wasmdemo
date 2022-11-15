@@ -28,3 +28,6 @@ async function onRunClick() {
 }
 
 document.getElementById("btnRun").onclick = onRunClick;
+
+log("wasmdemo compiled REPLACE_WITH_DATE");
+log("wasmdemo size: REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)");
