@@ -2,15 +2,23 @@
 
 const WASM_BASE64 = "REPLACE_WITH_BASE64";
 
-function log(text) {
-  const logElement = document.getElementById("pOut");
+function log(text, elementId) {
+  if (! elementId) {
+    elementId = "pLogs";
+  }
+  const logElement = document.getElementById(elementId);
   logElement.appendChild(document.createTextNode(text));
   logElement.appendChild(document.createElement('br'));
   console.log(text);
 }
 
+function onClearClick() {
+  console.log("\"Clear\" button clicked");
+  document.getElementById("pLogs").innerHTML = "";
+}
+
 async function onRunClick() {
-  log("onRunClick() start");
+  log("Run Started");
   try {
     const num1 = parseInt(document.getElementById("txtNum1").value);
     const num2 = parseInt(document.getElementById("txtNum2").value);
@@ -39,10 +47,11 @@ async function onRunClick() {
     log(`ERROR: ${e}`);
   }
 
-  log("onRunClick() done");
+  log("Run Completed");
 }
 
 document.getElementById("btnRun").onclick = onRunClick;
+document.getElementById("btnClear").onclick = onClearClick;
 
-log("wasmdemo compiled REPLACE_WITH_DATE");
-log("wasmdemo size: REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)");
+log("wasmdemo compiled REPLACE_WITH_DATE", "pPreamble");
+log("wasmdemo size: REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)", "pPreamble");
