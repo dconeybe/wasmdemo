@@ -24,8 +24,17 @@ async function onRunClick() {
         }
       }
     });
-    const result = wasmInstance.exports.add(num1, num2);
-    log(`add(${num1}, ${num2}) returned ${result}`);
+
+    const addResult = wasmInstance.exports.add(num1, num2);
+    log(`add(${num1}, ${num2}) returned ${addResult}`);
+
+    const buf = new Uint8Array(wasmInstance.exports.memory.buffer)
+    const stringToReverse = "Hello World!";
+    new TextEncoder().encodeInto(stringToReverse, buf);
+    log(`Calling reverse("${stringToReverse}")`);
+    wasmInstance.exports.reverse_string(buf, 11);
+    const reversedString = new TextDecoder().decode(buf.subarray(0, 12));
+    log(`Reversed string: ${reversedString}`);
   } catch (e) {
     log(`ERROR: ${e}`);
   }
