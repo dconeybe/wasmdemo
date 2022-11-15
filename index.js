@@ -17,7 +17,13 @@ async function onRunClick() {
 
     const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
     const wasmModule = await WebAssembly.compile(wasm);
-    const wasmInstance = new WebAssembly.Instance(wasmModule);
+    const wasmInstance = new WebAssembly.Instance(wasmModule, {
+      base: {
+        log: function(num) {
+          log(`${num} logged from WebAssembly!`);
+        }
+      }
+    });
     const result = wasmInstance.exports.add(num1, num2);
     log(`add(${num1}, ${num2}) returned ${result}`);
   } catch (e) {
