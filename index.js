@@ -14,6 +14,7 @@ async function onRunClick() {
   try {
     const num1 = parseInt(document.getElementById("txtNum1").value);
     const num2 = parseInt(document.getElementById("txtNum2").value);
+    const textToReverse = document.getElementById("txtReverseString").value;
 
     const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
     const wasmModule = await WebAssembly.compile(wasm);
@@ -29,12 +30,11 @@ async function onRunClick() {
     log(`add(${num1}, ${num2}) returned ${addResult}`);
 
     const buf = new Uint8Array(wasmInstance.exports.memory.buffer)
-    const stringToReverse = "Hello World!";
-    new TextEncoder().encodeInto(stringToReverse, buf);
-    log(`Calling reverse("${stringToReverse}")`);
-    wasmInstance.exports.reverse_string(buf, 11);
-    const reversedString = new TextDecoder().decode(buf.subarray(0, 12));
-    log(`Reversed string: ${reversedString}`);
+    const { written: numBytes } = new TextEncoder().encodeInto(textToReverse, buf);
+    log(`Calling reverse("${textToReverse}", ${numBytes})`);
+    wasmInstance.exports.reverse_string(buf, numBytes);
+    const reversedText = new TextDecoder().decode(buf.subarray(0, numBytes));
+    log(`Reversed string: ${reversedText}`);
   } catch (e) {
     log(`ERROR: ${e}`);
   }

@@ -19,7 +19,7 @@ int add(int num1, int num2) {
 WASM_EXPORT("reverse_string")
 void reverse_string(char* data, int size) {
   char* start = data;
-  char* end = data + size;
+  char* end = data + size - 1;
   while (start != end) {
     char tmp = *start;
     *start = *end;
