@@ -32,6 +32,7 @@ if(NOT Python3_FOUND)
 endif()
 
 add_executable(wasmdemo wasmdemo.cc)
+set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
 
 add_custom_command(
   OUTPUT
