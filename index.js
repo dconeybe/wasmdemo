@@ -1,28 +1,32 @@
 "use strict";
 
 const WASM_BASE64 = "REPLACE_WITH_BASE64";
+const logElement = document.getElementById("pLogs");
+const preambleElement = document.getElementById("pPreamble");
+const num1Element = document.getElementById("txtNum1");
+const num2Element = document.getElementById("txtNum2");
+const textToReverseElement = document.getElementById("txtReverseString");
 
-function log(text, elementId) {
-  if (! elementId) {
-    elementId = "pLogs";
+function log(text, element) {
+  if (! element) {
+    element = logElement;
   }
-  const logElement = document.getElementById(elementId);
-  logElement.appendChild(document.createTextNode(text));
-  logElement.appendChild(document.createElement('br'));
+  element.appendChild(document.createTextNode(text));
+  element.appendChild(document.createElement('br'));
   console.log(text);
 }
 
 function onClearClick() {
-  console.log("\"Clear\" button clicked");
-  document.getElementById("pLogs").innerHTML = "";
+  console.log(`"Clear" button clicked`);
+  logElement.innerHTML = "";
 }
 
 async function onRunClick() {
   log("Run Started");
   try {
-    const num1 = parseInt(document.getElementById("txtNum1").value);
-    const num2 = parseInt(document.getElementById("txtNum2").value);
-    const textToReverse = document.getElementById("txtReverseString").value;
+    const num1 = parseInt(num1Element.value);
+    const num2 = parseInt(num2Element.value);
+    const textToReverse = textToReverseElement.value;
 
     const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
     const wasmModule = await WebAssembly.compile(wasm);
@@ -50,8 +54,48 @@ async function onRunClick() {
   log("Run Completed");
 }
 
-document.getElementById("btnRun").onclick = onRunClick;
-document.getElementById("btnClear").onclick = onClearClick;
+function saveInputElementValue(element) {
+  if (typeof Storage === 'undefined') {
+    return;
+  }
+  window.sessionStorage.setItem(element.id, element.value);
+}
 
-log("wasmdemo compiled REPLACE_WITH_DATE", "pPreamble");
-log("wasmdemo size: REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)", "pPreamble");
+function onTextInputChange(event) {
+  saveInputElementValue(event.currentTarget);
+}
+
+function initializeInputElementValue(element) {
+  if (typeof Storage === 'undefined') {
+    return;
+  }
+
+  const value = window.sessionStorage.getItem(element.id);
+  if (! value) {
+    return;
+  }
+
+  element.value = value;
+}
+
+function initializeInputElementValues() {
+  initializeInputElementValue(num1Element);
+  initializeInputElementValue(num2Element);
+  initializeInputElementValue(textToReverseElement);
+}
+
+function initialize() {
+  log("wasmdemo compiled REPLACE_WITH_DATE", preambleElement);
+  log("wasmdemo size: REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)", preambleElement);
+
+  num1Element.onchange = onTextInputChange;
+  num2Element.onchange = onTextInputChange;
+  textToReverseElement.onchange = onTextInputChange;
+
+  document.getElementById("btnRun").onclick = onRunClick;
+  document.getElementById("btnClear").onclick = onClearClick;
+
+  initializeInputElementValues();
+}
+
+initialize();
