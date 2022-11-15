@@ -1,6 +1,6 @@
 "use strict";
 
-const WASM_BASE64 = undefined;
+const WASM_BASE64 = "REPLACE_WITH_BASE64";
 
 function log(text) {
   const logElement = document.getElementById("pOut");
