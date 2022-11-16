@@ -15,6 +15,8 @@ from absl import app
 from absl import flags
 from absl import logging
 
+import requests
+
 
 DEFAULT_CACHE_DIR = pathlib.Path.home() / ".download_googletest_py_cache"
 
@@ -35,77 +37,83 @@ FLAG_CACHE_ENABLED = flags.DEFINE_boolean(
 class CacheFile(abc.ABC):
 
   @abc.abstractmethod
-  def create(self) -> io.RawIOBase:
+  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
     raise NotImplementedError()
 
   @abc.abstractmethod
-  def commit(self) -> None:
+  def commit(self) -> io.RawIOBase:
     raise NotImplementedError()
 
   @abc.abstractmethod
   def rollback(self) -> None:
     raise NotImplementedError()
 
-  def __enter__(self) -> io.RawIOBase:
+  @abc.abstractmethod
+  def close(self) -> None:
+    raise NotImplementedError()
+
+  def __enter__(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
     return self.create()
 
   def __exit__(self, exc_type, exc_val, exc_tb):
-    if exc_type:
-      self.rollback()
-    else:
-      self.commit()
+    self.close()
 
 
 class TransientCacheFile(CacheFile):
 
-  def __init__(self) -> None:
-    self.name = None
-
-  def create(self) -> io.RawIOBase:
+  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
     self.f = tempfile.TemporaryFile()
-    return self.f
+    return (None, self.f)
 
-  def commit(self) -> None:
-    self.f.close()
-    del self.f
+  def commit(self) -> io.RawIOBase:
+    return self.f
 
   def rollback(self) -> None:
     self.f.close()
-    del self.f
 
+  def close(self) -> None:
+    self.f.close()
+    
 
 class PersistentCacheFile(CacheFile):
 
   def __init__(self, git_commit: str, dest_file: pathlib.Path) -> None:
     self.git_commit = git_commit
     self.dest_file = dest_file
+    self.f = None
 
-  def create(self) -> io.RawIOBase:
+  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
     if not self.dest_file.parent.exists():
       self.dest_file.parent.mkdir(parents=True, exist_ok=True)
     (temp_file_handle, temp_file_path) = tempfile.mkstemp(
       f"_{self.dest_file.name}", dir=self.dest_file.parent)
     self.f = os.fdopen(temp_file_handle, 'wb')
-    self.name = temp_file_path
-    return self.f
+    self.path = pathlib.Path(temp_file_path)
+    return (self.path, self.f)
 
-  def commit(self) -> None:
+  def commit(self) -> io.RawIOBase:
     try:
       self.f.close()
-      src_file = pathlib.Path(self.name)
-      logging.info("Renaming %s to %s", src_file, self.dest_file.name)
-      src_file.rename(self.dest_file)
+      self.f = None
+      logging.info("Renaming %s to %s", self.path, self.dest_file.name)
+      self.path.rename(self.dest_file)
     except:
-      logging.info("Deleting %s", self.name)
-      os.unlink(self.name)
+      logging.info("Deleting %s", self.path)
+      self.path.unlink(missing_ok=True)
       raise
+
+    return self.dest_file.open("rb")
 
   def rollback(self) -> None:
     try:
       self.f.close()
     finally:
       logging.info("Deleting %s", self.name)
-      os.unlink(self.name)
+      self.path.unlink(missing_ok=True)
+
+  def close(self) -> None:
+    if self.f:
+      self.rollback()
 
 
 class GoogletestDownloader:
@@ -149,14 +157,33 @@ class GoogletestDownloader:
         dest_file=download_dest_file,
       )
 
-    with download_cache_file as f:
+    with download_cache_file as (download_file_path, download_file):
       url = f"https://github.com/google/googletest/archive/{self.git_commit}.zip"
-      if (download_cache_file.name):
-        logging.info("Downloading %s to %s", url, download_cache_file.name)
+      if (download_file_path):
+        logging.info("Downloading %s to %s", url, download_file_path)
       else:
         logging.info("Downloading %s", url)
 
-      yield f
+      session = requests.Session()
+      response = session.get(url, stream=True)
+      response.raise_for_status()
+      content_length = response.headers.get("Content-Length")
+      if content_length:
+        try:
+          content_length_int = int(content_length)
+        except ValueError:
+          pass
+        else:
+          logging.info("Downloading %s bytes", f"{content_length_int:,}")
+      downloaded_bytes_count = 0
+      for chunk in response.iter_content(chunk_size=None):
+        download_file.write(chunk)
+        downloaded_bytes_count += len(chunk)
+
+      logging.info("Downloaded %s bytes from %s", f"{downloaded_bytes_count:,}", url)
+
+      with download_cache_file.commit() as committed_file:
+        yield committed_file
 
 
 def main(argv: Sequence[str]) -> None:
