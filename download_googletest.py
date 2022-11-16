@@ -5,6 +5,7 @@ Syntax: %s <git_commit> <dest_dir>
 import abc
 from collections.abc import Generator, Sequence
 import contextlib
+import dataclasses
 import io
 import os
 import pathlib
@@ -34,14 +35,20 @@ FLAG_CACHE_ENABLED = flags.DEFINE_boolean(
 )
 
 
+@dataclasses.dataclass(frozen=True)
+class OpenedFilePathPair:
+  path: Optional[pathlib.Path]
+  f: io.RawIOBase
+
+
 class CacheFile(abc.ABC):
 
   @abc.abstractmethod
-  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
+  def create(self) -> OpenedFilePathPair:
     raise NotImplementedError()
 
   @abc.abstractmethod
-  def commit(self) -> io.RawIOBase:
+  def commit(self) -> OpenedFilePathPair:
     raise NotImplementedError()
 
   @abc.abstractmethod
@@ -52,21 +59,21 @@ class CacheFile(abc.ABC):
   def close(self) -> None:
     raise NotImplementedError()
 
-  def __enter__(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
+  def __enter__(self) -> OpenedFilePathPair:
     return self.create()
 
-  def __exit__(self, exc_type, exc_val, exc_tb):
+  def __exit__(self, exc_type, exc_val, exc_tb) -> None:
     self.close()
 
 
 class TransientCacheFile(CacheFile):
 
-  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
+  def create(self) -> OpenedFilePathPair:
     self.f = tempfile.TemporaryFile()
-    return (None, self.f)
+    return OpenedFilePathPair(path=None, f=self.f)
 
-  def commit(self) -> io.RawIOBase:
-    return self.f
+  def commit(self) -> OpenedFilePathPair:
+    return OpenedFilePathPair(path=None, f=self.f)
 
   def rollback(self) -> None:
     self.f.close()
@@ -82,16 +89,16 @@ class PersistentCacheFile(CacheFile):
     self.dest_file = dest_file
     self.f = None
 
-  def create(self) -> tuple[Optional[pathlib.Path], io.RawIOBase]:
+  def create(self) -> OpenedFilePathPair:
     if not self.dest_file.parent.exists():
       self.dest_file.parent.mkdir(parents=True, exist_ok=True)
     (temp_file_handle, temp_file_path) = tempfile.mkstemp(
       f"_{self.dest_file.name}", dir=self.dest_file.parent)
     self.f = os.fdopen(temp_file_handle, 'wb')
     self.path = pathlib.Path(temp_file_path)
-    return (self.path, self.f)
+    return OpenedFilePathPair(path=self.path, f=self.f)
 
-  def commit(self) -> io.RawIOBase:
+  def commit(self) -> OpenedFilePathPair:
     try:
       self.f.close()
       self.f = None
@@ -102,7 +109,7 @@ class PersistentCacheFile(CacheFile):
       self.path.unlink(missing_ok=True)
       raise
 
-    return self.dest_file.open("rb")
+    return OpenedFilePathPair(path=self.dest_file, f=self.dest_file.open("rb"))
 
   def rollback(self) -> None:
     try:
@@ -138,7 +145,7 @@ class GoogletestDownloader:
     return False
 
   @contextlib.contextmanager
-  def download(self) -> Generator[io.RawIOBase, None, None]:
+  def download(self) -> Generator[OpenedFilePathPair, None, None]:
     cache_dir = self.cache_dir
     if not cache_dir:
       download_cache_file = TransientCacheFile()
@@ -148,8 +155,8 @@ class GoogletestDownloader:
       # Use the previously-downloaded file, if it exists
       if download_dest_file.exists():
         logging.info("Using previously-downloaded file %s", download_dest_file)
-        with download_dest_file.open("rb") as f:
-          yield f
+        with download_dest_file.open("rb") as download_dest_file_file_path_pair:
+          yield download_dest_file_file_path_pair
           return
 
       download_cache_file = PersistentCacheFile(
@@ -157,7 +164,9 @@ class GoogletestDownloader:
         dest_file=download_dest_file,
       )
 
-    with download_cache_file as (download_file_path, download_file):
+    with download_cache_file as download_cache_file_file_path_pair:
+      download_file_path = download_cache_file_file_path_pair.path
+      download_file = download_cache_file_file_path_pair.f
       url = f"https://github.com/google/googletest/archive/{self.git_commit}.zip"
       if (download_file_path):
         logging.info("Downloading %s to %s", url, download_file_path)
@@ -182,8 +191,9 @@ class GoogletestDownloader:
 
       logging.info("Downloaded %s bytes from %s", f"{downloaded_bytes_count:,}", url)
 
-      with download_cache_file.commit() as committed_file:
-        yield committed_file
+      committed_file_path_pair = download_cache_file.commit()
+      with committed_file_path_pair.f:
+        yield committed_file_path_pair
 
 
 def main(argv: Sequence[str]) -> None:
