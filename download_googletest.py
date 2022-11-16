@@ -37,7 +37,7 @@ FLAG_CACHE_ENABLED = flags.DEFINE_boolean(
 
 @dataclasses.dataclass(frozen=True)
 class OpenedFilePathPair:
-  path: Optional[pathlib.Path]
+  path: pathlib.Path
   f: io.RawIOBase
 
 
@@ -68,12 +68,16 @@ class CacheFile(abc.ABC):
 
 class TransientCacheFile(CacheFile):
 
+  def __init__(self, name_hint: str) -> None:
+    self.name_hint = name_hint
+    self.synthetic_path = pathlib.Path(tempfile.gettempdir()) / name_hint
+
   def create(self) -> OpenedFilePathPair:
-    self.f = tempfile.TemporaryFile()
-    return OpenedFilePathPair(path=None, f=self.f)
+    self.f = tempfile.TemporaryFile(suffix=self.name_hint)
+    return OpenedFilePathPair(path=self.synthetic_path, f=self.f)
 
   def commit(self) -> OpenedFilePathPair:
-    return OpenedFilePathPair(path=None, f=self.f)
+    return OpenedFilePathPair(path=self.synthetic_path, f=self.f)
 
   def rollback(self) -> None:
     self.f.close()
@@ -138,25 +142,30 @@ class GoogletestDownloader:
   def run(self) -> None:
     if self.is_stamp_file_valid():
       return
-    with self.download() as googletest_zip_file:
-      pass#self.extract(googletest_zip_file)
+    with self.download() as googletest_zip_file_path_pair:
+      self.extract(googletest_zip_file_path_pair)
+      self.write_stamp_file()
 
   def is_stamp_file_valid(self) -> bool:
+    return False
+
+  def write_stamp_file(self) -> bool:
     return False
 
   @contextlib.contextmanager
   def download(self) -> Generator[OpenedFilePathPair, None, None]:
     cache_dir = self.cache_dir
+    download_dest_file_name = f"googletest_{self.git_commit}.zip"
     if not cache_dir:
-      download_cache_file = TransientCacheFile()
+      download_cache_file = TransientCacheFile(name_hint=download_dest_file_name)
     else:
-      download_dest_file = cache_dir / f"googletest_{self.git_commit}.zip"
+      download_dest_file = cache_dir / download_dest_file_name
 
       # Use the previously-downloaded file, if it exists
       if download_dest_file.exists():
         logging.info("Using previously-downloaded file %s", download_dest_file)
-        with download_dest_file.open("rb") as download_dest_file_file_path_pair:
-          yield download_dest_file_file_path_pair
+        with download_dest_file.open("rb") as f:
+          yield OpenedFilePathPair(download_dest_file, f)
           return
 
       download_cache_file = PersistentCacheFile(
@@ -168,10 +177,7 @@ class GoogletestDownloader:
       download_file_path = download_cache_file_file_path_pair.path
       download_file = download_cache_file_file_path_pair.f
       url = f"https://github.com/google/googletest/archive/{self.git_commit}.zip"
-      if (download_file_path):
-        logging.info("Downloading %s to %s", url, download_file_path)
-      else:
-        logging.info("Downloading %s", url)
+      logging.info("Downloading %s to %s", url, download_file_path)
 
       session = requests.Session()
       response = session.get(url, stream=True)
@@ -194,6 +200,9 @@ class GoogletestDownloader:
       committed_file_path_pair = download_cache_file.commit()
       with committed_file_path_pair.f:
         yield committed_file_path_pair
+
+  def extract(self, zip_file_path_pair: OpenedFilePathPair) -> None:
+    logging.info("Unzipping %s to %s", zip_file_path_pair.path, self.dest_dir)
 
 
 def main(argv: Sequence[str]) -> None:
