@@ -21,11 +21,6 @@ else()
   message(FATAL_ERROR "Invalid value for WASMDEMO_CLANG_TARGET: ${WASMDEMO_CLANG_TARGET}")
 endif()
 
-configure_file(
-  "${CMAKE_CURRENT_LIST_DIR}/config.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/include/wasmdemo/config.h"
-)
-
 add_compile_options(-Wall -Wextra -Werror)
 if(WASMDEMO_CLANG_TARGET_WASM32)
   add_compile_options(--target=wasm32)
@@ -41,7 +36,6 @@ if(WASMDEMO_CLANG_TARGET_WASM32)
   add_link_options(--target=wasm32)
   add_link_options(-nostdlib)
   add_link_options(-fvisibility=hidden)
-  add_link_options(-Wl,--no-entry)
   add_link_options($<$<CONFIG:Release>:-ffunction-sections>)
   add_link_options($<$<CONFIG:Release>:-fdata-sections>)
   add_link_options($<$<CONFIG:Release>:-flto>)
@@ -50,19 +44,5 @@ if(WASMDEMO_CLANG_TARGET_WASM32)
   add_link_options($<$<CONFIG:Release>:-Wl,--gc-sections>)
 endif()
 
-if(WASMDEMO_CLANG_TARGET_WASM32)
-  add_executable(wasmdemo src/wasmdemo.cc)
-  set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
-else()
-  add_library(wasmdemo src/wasmdemo.cc)
-endif()
-
-target_include_directories(
-  wasmdemo
-  PRIVATE
-  "${CMAKE_CURRENT_BINARY_DIR}/include"
-  PUBLIC
-  "${CMAKE_CURRENT_LIST_DIR}/include"
-)
-
+add_subdirectory(cpp)
 add_subdirectory(www)
