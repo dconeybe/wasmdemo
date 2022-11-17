@@ -2,15 +2,20 @@
 Syntax: %s <git_commit> <dest_dir>
 """
 
+from __future__ import annotations
+
 import abc
-from collections.abc import Generator, Sequence
+from collections.abc import Generator, Mapping, Sequence
 import contextlib
 import dataclasses
 import io
+import json
 import os
 import pathlib
+import shutil
 import tempfile
-from typing import Optional
+from typing import Any, IO, Optional
+import zipfile
 
 from absl import app
 from absl import flags
@@ -38,7 +43,7 @@ FLAG_CACHE_ENABLED = flags.DEFINE_boolean(
 @dataclasses.dataclass(frozen=True)
 class OpenedFilePathPair:
   path: pathlib.Path
-  f: io.RawIOBase
+  f: IO[bytes]
 
 
 class CacheFile(abc.ABC):
@@ -71,6 +76,7 @@ class TransientCacheFile(CacheFile):
   def __init__(self, name_hint: str) -> None:
     self.name_hint = name_hint
     self.synthetic_path = pathlib.Path(tempfile.gettempdir()) / name_hint
+    self.f: IO[bytes] = None
 
   def create(self) -> OpenedFilePathPair:
     self.f = tempfile.TemporaryFile(suffix=self.name_hint)
@@ -91,7 +97,8 @@ class PersistentCacheFile(CacheFile):
   def __init__(self, git_commit: str, dest_file: pathlib.Path) -> None:
     self.git_commit = git_commit
     self.dest_file = dest_file
-    self.f = None
+    self.f: IO[bytes] = None
+    self.path: pathlib.Path = None
 
   def create(self) -> OpenedFilePathPair:
     if not self.dest_file.parent.exists():
@@ -119,12 +126,55 @@ class PersistentCacheFile(CacheFile):
     try:
       self.f.close()
     finally:
-      logging.info("Deleting %s", self.name)
+      logging.info("Deleting %s", self.path)
       self.path.unlink(missing_ok=True)
 
   def close(self) -> None:
     if self.f:
       self.rollback()
+
+
+class Stamp:
+
+  def __init__(self, git_commit: str) -> None:
+    self.git_commit = git_commit
+
+  def save(self, file_path: pathlib.Path) -> None:
+    data = { "git_commit": str(self.git_commit) }
+    with file_path.open("wt", encoding="utf8") as f:
+      json.dump(data, f, ensure_ascii=False, indent=2, sort_keys=True)
+
+  def __eq__(self, other: Any) -> bool:
+    try:
+      other_git_commit = other.git_commit
+    except AttributeError:
+      return False
+    else:
+      return other_git_commit == self.git_commit
+
+  def __ne__(self, other: Any) -> bool:
+    return not self.__eq__(other)
+
+  @classmethod
+  def load(cls, file_path: pathlib.Path) -> Stamp:
+    with file_path.open("rt", encoding="utf8") as f:
+      # Set an upper limit on the number of bytes read to avoid DoS attacks.
+      # See https://docs.python.org/3.9/library/json.html for details.
+      encoded_json = f.read(8192)
+
+    decoded_json = json.loads(encoded_json)
+    if not isinstance(decoded_json, Mapping):
+      raise cls.StampDecodeError(f"Decoded JSON should be a map, but got {type(decoded_json)}")
+    git_commit = decoded_json.get("git_commit")
+    if git_commit is None:
+      raise cls.StampDecodeError("git_commit key/value pair is missing")
+    if not isinstance(git_commit, str):
+      raise cls.StampDecodeError(f"git_commit should be a string, but got {type(git_commit)}")
+
+    return cls(git_commit=git_commit)
+
+  class StampDecodeError(Exception):
+    pass
 
 
 class GoogletestDownloader:
@@ -138,19 +188,47 @@ class GoogletestDownloader:
     self.git_commit = git_commit
     self.dest_dir = dest_dir
     self.cache_dir = cache_dir
+    self.stamp_file = dest_dir / "stamp.json"
 
   def run(self) -> None:
     if self.is_stamp_file_valid():
+      logging.info("Stamp file %s is valid; nothing to do", self.stamp_file)
       return
+
+    if self.dest_dir.exists():
+      logging.info("Deleting %s", self.dest_dir)
+      shutil.rmtree(self.dest_dir)
+
     with self.download() as googletest_zip_file_path_pair:
       self.extract(googletest_zip_file_path_pair)
-      self.write_stamp_file()
+
+    self.fixup()
+    self.write_stamp_file()
 
   def is_stamp_file_valid(self) -> bool:
-    return False
+    if not self.stamp_file.exists():
+      return False
+
+    logging.info("Validating stamp file: %s", self.stamp_file)
+    try:
+      stamp = Stamp.load(self.stamp_file)
+    except (IOError, Stamp.StampDecodeError, UnicodeDecodeError, json.JSONDecodeError) as e:
+      logging.info("Validating stamp file %s failed: %s", self.stamp_file, e)
+      return False
+
+    expected_stamp = Stamp(git_commit=self.git_commit)
+    if stamp != expected_stamp:
+      logging.info("Validating stamp file %s failed: stamp does not equal the "
+        "expected stamp", self.stamp_file)
+      return False
+
+    # Stamp file is valid.
+    return True
 
   def write_stamp_file(self) -> bool:
-    return False
+    logging.info("Writing stamp to %s", self.stamp_file)
+    stamp = Stamp(git_commit=self.git_commit)
+    stamp.save(self.stamp_file)
 
   @contextlib.contextmanager
   def download(self) -> Generator[OpenedFilePathPair, None, None]:
@@ -202,7 +280,48 @@ class GoogletestDownloader:
         yield committed_file_path_pair
 
   def extract(self, zip_file_path_pair: OpenedFilePathPair) -> None:
+    if not self.dest_dir.exists():
+      logging.info("Creating directory: %s", self.dest_dir)
+      self.dest_dir.mkdir(parents=True, exist_ok=True)
+
     logging.info("Unzipping %s to %s", zip_file_path_pair.path, self.dest_dir)
+    with zipfile.ZipFile(zip_file_path_pair.f) as zf:
+      zf.extractall(self.dest_dir)
+
+  def fixup(self) -> None:
+    dest_subdir = self.dest_single_subdir()
+
+    logging.info("Moving the contents of %s to its parent directory", dest_subdir)
+    for src_file in dest_subdir.iterdir():
+      dest_file = src_file.parent.parent / src_file.name
+      logging.debug("Moving %s to %s", src_file, dest_file)
+      src_file.rename(dest_file)
+
+    logging.debug("Deleting empty directory: %s", dest_subdir)
+    dest_subdir.rmdir()
+
+  def dest_single_subdir(self) -> pathlib.Path:
+    single_subdir = None
+    for path_entry in self.dest_dir.iterdir():
+      if single_subdir is None:
+        single_subdir = path_entry
+      else:
+        raise self.InvalidDirectoryLayout(f"{self.dest_dir} contains more than "
+          f"one file/directory, but expected exactly one directory; found "
+          f"{single_subdir.name} and {path_entry.name}")
+
+    if single_subdir is None:
+      raise self.InvalidDirectoryLayout(f"{self.dest_dir} should contain "
+        "exactly one subdirectory; however, it is completely empty")
+    if not single_subdir.is_dir():
+      raise self.InvalidDirectoryLayout(f"{self.dest_dir} should contain "
+        f"exactly one subdirectory; however, it contained a non-directory, "
+        f"{single_subdir.name}")
+
+    return single_subdir
+
+  class InvalidDirectoryLayout(Exception):
+    pass
 
 
 def main(argv: Sequence[str]) -> None:
