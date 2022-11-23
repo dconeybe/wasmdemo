@@ -29,14 +29,14 @@ async function onRunClick() {
     const textToReverse = textToReverseElement.value;
 
     const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
-    const wasmModule = await WebAssembly.compile(wasm);
-    const wasmInstance = new WebAssembly.Instance(wasmModule, {
+    const wasmInstantiateResult = await WebAssembly.instantiate(wasm, {
       base: {
         log: function(num) {
           log(`${num} logged from WebAssembly!`);
         }
       }
     });
+    const { module: wasmModule, instance: wasmInstance } = wasmInstantiateResult;
 
     const addResult = wasmInstance.exports.add(num1, num2);
     log(`add(${num1}, ${num2}) returned ${addResult}`);
