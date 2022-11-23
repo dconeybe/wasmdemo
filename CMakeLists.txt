@@ -4,6 +4,7 @@ project(wasmdemo)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # By default, build the wasm32 target.
 # But also allow building for the native platform, to enable running the
@@ -21,7 +22,23 @@ else()
   message(FATAL_ERROR "Invalid value for WASMDEMO_CLANG_TARGET: ${WASMDEMO_CLANG_TARGET}")
 endif()
 
-add_compile_options(-Wall -Wextra -Werror)
+set(WASMDEMO_WARNING_FLAGS
+  -Wall
+  -Wextra
+  -Werror
+  -Wformat
+  -Wuninitialized
+  -fno-common
+  -Wunused-function
+  -Wunused-value
+  -Wunused-variable
+  -Wreorder
+  -Wshadow
+  -Wconversion
+  -Wpedantic
+)
+
+add_compile_options(${WASMDEMO_WARNING_FLAGS})
 if(WASMDEMO_CLANG_TARGET_WASM32)
   add_compile_options(--target=wasm32)
   add_compile_options(-nostdlib)
@@ -31,7 +48,7 @@ if(WASMDEMO_CLANG_TARGET_WASM32)
   add_compile_options($<$<CONFIG:Release>:-flto>)
 endif()
 
-add_link_options(-Wall -Wextra -Werror)
+add_link_options(${WASMDEMO_WARNING_FLAGS})
 if(WASMDEMO_CLANG_TARGET_WASM32)
   add_link_options(--target=wasm32)
   add_link_options(-nostdlib)
