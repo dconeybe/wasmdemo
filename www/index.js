@@ -21,31 +21,61 @@ function onClearClick() {
   logElement.innerHTML = "";
 }
 
+function MyWebAssemblyInstance(instance) {
+  this.echo = function(num) {
+    if (typeof(num) !== 'number') {
+      throw new Error(`num is not a number: ${num}`);
+    }
+    instance.exports.echo(num);
+  }
+
+  this.add = function(num1, num2) {
+    if (typeof(num1) !== 'number') {
+      throw new Error(`num1 is not a number: ${num}`);
+    }
+    if (typeof(num2) !== 'number') {
+      throw new Error(`num2 is not a number: ${num}`);
+    }
+    return instance.exports.add(num1, num2);
+  }
+
+  this.reverse = function(s) {
+    const buf = new Uint8Array(instance.exports.memory.buffer)
+    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, buf);
+    instance.exports.reverse_string(buf, numBytes);
+    return new TextDecoder("ascii").decode(buf.subarray(0, numBytes));
+  }
+}
+
+async function loadWebAssemblyModule() {
+  const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
+  const wasmInstantiateResult = await WebAssembly.instantiate(wasm, {
+    base: {
+      log: function(num) {
+        log(`${num} logged from WebAssembly!`);
+      }
+    }
+  });
+  const { instance } = wasmInstantiateResult;
+  return new MyWebAssemblyInstance(instance);
+}
+
 async function onRunClick() {
   log("Run Started");
   try {
+    const webAssemblyInstance = await loadWebAssemblyModule();
+
     const num1 = parseInt(num1Element.value);
     const num2 = parseInt(num2Element.value);
     const textToReverse = textToReverseElement.value;
 
-    const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
-    const wasmInstantiateResult = await WebAssembly.instantiate(wasm, {
-      base: {
-        log: function(num) {
-          log(`${num} logged from WebAssembly!`);
-        }
-      }
-    });
-    const { module: wasmModule, instance: wasmInstance } = wasmInstantiateResult;
-
-    const addResult = wasmInstance.exports.add(num1, num2);
+    const addResult = webAssemblyInstance.add(num1, num2);
     log(`add(${num1}, ${num2}) returned ${addResult}`);
 
-    const buf = new Uint8Array(wasmInstance.exports.memory.buffer)
-    const { written: numBytes } = new TextEncoder("utf8").encodeInto(textToReverse, buf);
-    log(`Calling reverse("${textToReverse}", ${numBytes})`);
-    wasmInstance.exports.reverse_string(buf, numBytes);
-    const reversedText = new TextDecoder("ascii").decode(buf.subarray(0, numBytes));
+    webAssemblyInstance.echo(addResult);
+
+    log(`Calling reverse("${textToReverse}")`);
+    const reversedText = webAssemblyInstance.reverse(textToReverse);
     log(`Reversed string: ${reversedText}`);
   } catch (e) {
     log(`ERROR: ${e}`);

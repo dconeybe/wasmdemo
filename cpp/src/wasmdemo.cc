@@ -4,9 +4,13 @@
 WASM_IMPORT("base", "log")
 void log(int num);
 
+WASM_EXPORT("echo")
+void echo(int num) {
+  log(num);
+}
+
 WASM_EXPORT("add")
 int add(int num1, int num2) {
-  log(num1);
   return num1 + num2;
 }
 
