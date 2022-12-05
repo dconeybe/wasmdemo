@@ -116,7 +116,7 @@ function initializeInputElementValues() {
 
 function initialize() {
   log("wasmdemo compiled REPLACE_WITH_DATE", preambleElement);
-  log("wasmdemo size (in bytes): REPLACE_WITH_SIZE (md5: REPLACE_WITH_MD5)", preambleElement);
+  log("wasmdemo size (in bytes): REPLACE_WITH_SIZE", preambleElement);
 
   num1Element.onchange = onTextInputChange;
   num2Element.onchange = onTextInputChange;

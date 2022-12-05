@@ -18,10 +18,6 @@ def main(argv):
 
   wasm = wasm_file.read_bytes()
   wasm_base64 = base64.b64encode(wasm).decode("US-ASCII")
-  wasm_md5 = hashlib.md5()
-  wasm_md5.update(wasm)
-  wasm_md5_hexdigest = wasm_md5.hexdigest()
-  del wasm_md5
 
   wasm_num_bytes = len(wasm)
   wasm_base64_num_bytes = len(wasm_base64.encode('utf8'))
@@ -35,7 +31,6 @@ def main(argv):
     .replace("REPLACE_WITH_DATE", date_text)
     .replace("REPLACE_WITH_SIZE",
       f"{wasm_num_bytes} ({wasm_base64_num_bytes} in base64)")
-    .replace("REPLACE_WITH_MD5", wasm_md5_hexdigest)
   )
 
   dest_file.write_text(src_modified, "utf8")
