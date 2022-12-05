@@ -29,8 +29,8 @@ def main(argv):
     src
     .replace("REPLACE_WITH_BASE64", wasm_base64)
     .replace("REPLACE_WITH_DATE", date_text)
-    .replace("REPLACE_WITH_SIZE",
-      f"{wasm_num_bytes} ({wasm_base64_num_bytes} in base64)")
+    .replace("REPLACE_WITH_SIZE_RAW", f"{wasm_num_bytes} bytes")
+    .replace("REPLACE_WITH_SIZE_BASE64", f"{wasm_base64_num_bytes} bytes")
   )
 
   dest_file.parent.mkdir(parents=True, exist_ok=True)
