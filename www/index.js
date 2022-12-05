@@ -2,17 +2,13 @@
 
 const WASM_BASE64 = "REPLACE_WITH_BASE64";
 const logElement = document.getElementById("pLogs");
-const preambleElement = document.getElementById("pPreamble");
 const num1Element = document.getElementById("txtNum1");
 const num2Element = document.getElementById("txtNum2");
 const textToReverseElement = document.getElementById("txtReverseString");
 
-function log(text, element) {
-  if (! element) {
-    element = logElement;
-  }
-  element.appendChild(document.createTextNode(text));
-  element.appendChild(document.createElement('br'));
+function log(text) {
+  logElement.appendChild(document.createTextNode(text));
+  logElement.appendChild(document.createElement('br'));
   console.log(text);
 }
 
@@ -115,9 +111,6 @@ function initializeInputElementValues() {
 }
 
 function initialize() {
-  log("wasmdemo compiled REPLACE_WITH_DATE", preambleElement);
-  log("wasmdemo size (in bytes): REPLACE_WITH_SIZE", preambleElement);
-
   num1Element.onchange = onTextInputChange;
   num2Element.onchange = onTextInputChange;
   textToReverseElement.onchange = onTextInputChange;

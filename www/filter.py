@@ -12,8 +12,8 @@ def main(argv):
   if len(argv) > 4:
     raise app.UsageError(f"unexpected argument: {argv[4]}")
 
-  dest_file = pathlib.Path(argv[1])
-  src_file = pathlib.Path(argv[2])
+  src_file = pathlib.Path(argv[1])
+  dest_file = pathlib.Path(argv[2])
   wasm_file = pathlib.Path(argv[3])
 
   wasm = wasm_file.read_bytes()
@@ -33,6 +33,7 @@ def main(argv):
       f"{wasm_num_bytes} ({wasm_base64_num_bytes} in base64)")
   )
 
+  dest_file.parent.mkdir(parents=True, exist_ok=True)
   dest_file.write_text(src_modified, "utf8")
 
 
