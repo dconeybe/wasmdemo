@@ -1,6 +1,5 @@
-if(WASMDEMO_CLANG_TARGET_WASM32)
+if(WASMDEMO_TARGET_WASM32)
   add_executable(wasmdemo src/wasmdemo.cc)
-  target_link_options(wasmdemo PRIVATE -Wl,--no-entry)
   set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
 
   target_include_directories(
