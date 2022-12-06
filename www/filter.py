@@ -2,19 +2,19 @@ import datetime
 import base64
 import hashlib
 import pathlib
+import sys
 
-from absl import app
+def main():
+  if len(sys.argv) < 4:
+    print("missing arguments", file=sys.stderr)
+    sys.exit(2)
+  if len(sys.argv) > 4:
+    print(f"unexpected argument: {sys.argv[4]}", file=sys.stderr)
+    sys.exit(2)
 
-
-def main(argv):
-  if len(argv) < 4:
-    raise app.UsageError("missing arguments")
-  if len(argv) > 4:
-    raise app.UsageError(f"unexpected argument: {argv[4]}")
-
-  src_file = pathlib.Path(argv[1])
-  dest_file = pathlib.Path(argv[2])
-  wasm_file = pathlib.Path(argv[3])
+  src_file = pathlib.Path(sys.argv[1])
+  dest_file = pathlib.Path(sys.argv[2])
+  wasm_file = pathlib.Path(sys.argv[3])
 
   wasm = wasm_file.read_bytes()
   wasm_base64 = base64.b64encode(wasm).decode("US-ASCII")
@@ -38,4 +38,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  app.run(main)
+  main()
