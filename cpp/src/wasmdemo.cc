@@ -1,4 +1,3 @@
-#include "wasmdemo/config.h"
 #include "wasmdemo/macros.h"
 
 WASM_IMPORT("base", "log")
