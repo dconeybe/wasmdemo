@@ -1,11 +1,3 @@
-# Stop processing this file if the clang target is not WebAssembly.
-# The "web site" created by the build targets below are only relevant when
-# compiling to WebAssembly because it doesn't make any sense to embed any other
-# build targets (e.g. x86_64, arm) into a web page.
-if(NOT WASMDEMO_CLANG_TARGET_WASM32)
-  return()
-endif()
-
 find_package (
   Python3
   "3.9...<4.0"

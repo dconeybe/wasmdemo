@@ -67,4 +67,7 @@ if(WASMDEMO_CLANG_TARGET_WASM32)
 endif()
 
 add_subdirectory(cpp)
-add_subdirectory(www)
+
+if(WASMDEMO_CLANG_TARGET_WASM32)
+  add_subdirectory(www)
+endif()
