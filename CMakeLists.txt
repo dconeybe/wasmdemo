@@ -58,4 +58,6 @@ add_subdirectory(cpp)
 
 if(WASMDEMO_TARGET_WASM32)
   add_subdirectory(www)
+else()
+  add_subdirectory(external)
 endif()
