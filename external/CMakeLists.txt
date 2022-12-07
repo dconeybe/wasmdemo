@@ -36,7 +36,7 @@ function(
 
   set(
     PACKAGE_DEST_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/${ARG_PACKAGE_NAME}"
+    "${CMAKE_CURRENT_LIST_DIR}/projects/${ARG_PACKAGE_NAME}"
   )
 
   set(
@@ -71,7 +71,33 @@ function(
       "${DEP_SETUP_PY_EXIT_CODE}: ${DEP_SETUP_PY_ARGS_STR}"
     )
   endif()
+
+  add_subdirectory("${PACKAGE_DEST_DIR}")
 endfunction(dep_setup)
+
+set(
+  INSTALL_GTEST
+  OFF
+  CACHE
+  BOOL
+  "Disable installation of googletest, since it's only embedded."
+)
+
+set(
+  GTEST_HAS_ABSL
+  ON
+  CACHE
+  BOOL
+  "Tell googletest that absl and re2 are available."
+)
+
+set(
+  ABSL_PROPAGATE_CXX_STD
+  ON
+  CACHE
+  BOOL
+  "Recommended by abseil since it will be the default in the future."
+)
 
 dep_setup(
   "abseil"
