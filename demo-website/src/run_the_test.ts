@@ -42,30 +42,32 @@ export async function runTheHashTest(): Promise<void> {
   const textToHashElement = document.getElementById(
     'txtHashString'
   ) as HTMLInputElement;
-  const textToHash = textToHashElement.value || '';
+  let numOfHash = parseInt(textToHashElement.value) || 1;
+  log(`MD5 Hash random strings for ${numOfHash} times.`);
 
-  log('Run MD5 hash with firestore JS function');
-  const time1 = performance.now();
-  const hashedTestJS = getMd5HashValue(textToHash);
-  const time2 = performance.now();
-  log(`Hashed string: ${hashedTestJS}`);
-  log(`Time used is ${time2 - time1}`);
-  log('\n');
-
-  log('Run MD5 hash with webasembly function');
   const webAssemblyInstance = await loadWebAssemblyModule();
-  const time3 = performance.now();
+  let timeJS = 0,
+    timeWasm = 0;
 
-  const hashedTextWasm = webAssemblyInstance.hash(textToHash) as Uint8Array;
-  const time4 = performance.now();
+  while (numOfHash > 0) {
+    let randomString = Math.random().toString(36).slice(2, 7);
+    const time1 = performance.now();
+    getMd5HashValue(randomString);
+    const time2 = performance.now();
+    timeJS += time2 - time1;
 
-  log(`Hashed string: ${hashedTextWasm}`);
-  log(`Time used is ${time4 - time3}`);
+    const time3 = performance.now();
+    webAssemblyInstance.hash(randomString);
+    const time4 = performance.now();
+    timeWasm += time4 - time3;
+    numOfHash--;
+    console.log(`Times left: ${numOfHash}`)
+  }
+
+  log('\n');
+  log(`JS MD5 Hash used: ${timeJS} milliseconds`);
   log('\n');
 
-  log(
-    `The result is ${
-      hashedTestJS.toString() === hashedTextWasm.toString() ? '' : ' NOT '
-    } the same`
-  );
+  log(`Wasm MD5 Hash used: ${timeWasm} milliseconds`);
+  log('\n');
 }
