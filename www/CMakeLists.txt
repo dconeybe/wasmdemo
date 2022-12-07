@@ -60,3 +60,9 @@ add_filtered_file(
   SRC "${CMAKE_CURRENT_LIST_DIR}/index.html"
   DEST "${CMAKE_CURRENT_BINARY_DIR}/index.html"
 )
+
+add_filtered_file(
+  generate_wasm_json
+  SRC "${CMAKE_CURRENT_LIST_DIR}/wasm.json"
+  DEST "${CMAKE_CURRENT_BINARY_DIR}/wasm.json"
+)
