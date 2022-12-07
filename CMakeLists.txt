@@ -22,7 +22,6 @@ endif()
 set(WASMDEMO_WARNING_FLAGS
   -Wall
   -Wextra
-  -Werror
   -Wformat
   -Wuninitialized
   -fno-common
