@@ -310,7 +310,7 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 WASM_EXPORT("hash")
 void hash(const char *str, const unsigned int size, unsigned char outputHash[16]) {
   // dummy hash as a "hello world"
-  MD5_CTX hashContext;
+  static MD5_CTX hashContext;
 
   MD5_Init(&hashContext);
   MD5_Update(&hashContext, str, size);
