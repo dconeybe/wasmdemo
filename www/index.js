@@ -51,9 +51,10 @@ function MyWebAssemblyInstance(instance) {
 
     const HASH_OUTPUT_SIZE = 16;
     offset += length * Uint8Array.BYTES_PER_ELEMENT;
-    const outputBuf = new Uint8Array(memory.buffer, offset, HASH_OUTPUT_SIZE)
 
-    hash(inputBuf, numBytes, outputBuf);
+    const outputBufPtr = hash(inputBuf, numBytes);
+
+    const outputBuf = new Uint8Array(memory.buffer, outputBufPtr, 16);
     return [...outputBuf].map((x) => x.toString(16)).join(' ');
   }
 }

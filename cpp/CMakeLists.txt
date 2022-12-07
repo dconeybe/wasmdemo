@@ -23,12 +23,6 @@ else()
   )
 endif()
 
-target_include_directories(
-  wasmdemo
-  PRIVATE
-  "${CMAKE_CURRENT_LIST_DIR}/include/common"
-)
-
 target_compile_options(
   wasmdemo
   PRIVATE

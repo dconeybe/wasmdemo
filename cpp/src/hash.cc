@@ -1,4 +1,3 @@
-#include "wasmdemo/hash.h"
 #include "wasmdemo/macros.h"
 
 /// start of md5 block
@@ -39,7 +38,15 @@
  * compile-time configuration.
  */
 
-#ifndef HAVE_OPENSSL
+/* Any 32-bit or wider unsigned integer data type will do */
+typedef unsigned int MD5_u32plus;
+
+typedef struct {
+  MD5_u32plus lo, hi;
+  MD5_u32plus a, b, c, d;
+  unsigned char buffer[64];
+  MD5_u32plus block[16];
+} MD5_CTX;
 
 /*
  * The basic MD5 functions.
@@ -304,15 +311,17 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 	myMemset(ctx, 0, sizeof(*ctx));
 }
 
-#endif
 /// end of md5 block
 
 WASM_EXPORT("hash")
-void hash(const char *str, const unsigned int size, unsigned char outputHash[16]) {
+unsigned char* hash(const char *str, const unsigned int size) {
+  static unsigned char outputHash[16];
   // dummy hash as a "hello world"
   static MD5_CTX hashContext;
 
   MD5_Init(&hashContext);
   MD5_Update(&hashContext, str, size);
   MD5_Final(outputHash, &hashContext);
+
+  return outputHash;
 }
