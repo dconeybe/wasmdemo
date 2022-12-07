@@ -62,7 +62,7 @@ add_filtered_file(
 )
 
 add_filtered_file(
-  generate_wasm-json
+  generate_wasm_json
   SRC "${CMAKE_CURRENT_LIST_DIR}/wasm.json"
   DEST "${CMAKE_CURRENT_BINARY_DIR}/wasm.json"
 )
