@@ -5,7 +5,6 @@ const logElement = document.getElementById("pLogs");
 const num1Element = document.getElementById("txtNum1");
 const num2Element = document.getElementById("txtNum2");
 const textToReverseElement = document.getElementById("txtReverseString");
-const textToHashElement = document.getElementById("txtHashString");
 
 function log(text) {
   logElement.appendChild(document.createTextNode(text));
@@ -42,20 +41,6 @@ function MyWebAssemblyInstance(instance) {
     instance.exports.reverse_string(buf, numBytes);
     return new TextDecoder("ascii").decode(buf.subarray(0, numBytes));
   }
-
-  this.hash = function(s) {
-    const {hash, memory} = instance.exports;
-    let offset = 0;
-    const inputBuf = new Uint8Array(memory.buffer, offset, s.length);
-    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, inputBuf);
-
-    const HASH_OUTPUT_SIZE = 16;
-    offset += length * Uint8Array.BYTES_PER_ELEMENT;
-    const outputBuf = new Uint8Array(memory.buffer, offset, HASH_OUTPUT_SIZE)
-
-    hash(inputBuf, numBytes, outputBuf);
-    return [...outputBuf].map((x) => x.toString(16)).join(' ');
-  }
 }
 
 async function loadWebAssemblyModule() {
@@ -79,7 +64,6 @@ async function onRunClick() {
     const num1 = parseInt(num1Element.value);
     const num2 = parseInt(num2Element.value);
     const textToReverse = textToReverseElement.value;
-    const textToHash = textToHashElement.value;
 
     const addResult = webAssemblyInstance.add(num1, num2);
     log(`add(${num1}, ${num2}) returned ${addResult}`);
@@ -89,10 +73,6 @@ async function onRunClick() {
     log(`Calling reverse("${textToReverse}")`);
     const reversedText = webAssemblyInstance.reverse(textToReverse);
     log(`Reversed string: ${reversedText}`);
-
-    log(`Calling hash("${textToHash}")`);
-    const hashedText = webAssemblyInstance.hash(textToHash);
-    log (`Hashed string: ${hashedText}`);
   } catch (e) {
     log(`ERROR: ${e}`);
   }
