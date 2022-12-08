@@ -29,6 +29,12 @@ else()
     test/wasmdemo_test.cc
   )
 
+  target_include_directories(
+    wasmdemo_test
+    PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/test"
+  )
+
   target_link_libraries(
     wasmdemo_test
     PRIVATE

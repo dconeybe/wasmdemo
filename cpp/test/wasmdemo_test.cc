@@ -2,7 +2,14 @@
 
 #include "wasmdemo/wasmdemo.h"
 
+#include "wasmdemo_imports_impl.h"
+
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
+
+namespace {
+
+using testing::ElementsAre;
 
 TEST(wasmdemo, reverse_string_ShouldHandleEmptyString) {
   std::string s;
@@ -45,3 +52,13 @@ TEST(wasmdemo, reverse_string_ShouldReverseLongStringWithOddLength) {
   reverse_string(s.data(), static_cast<int>(s.length()));
   ASSERT_EQ(s, "!god yzal eht revo depmuj xof nworb kciuq ehT");
 }
+
+TEST(wasmdemo, log_ShouldCallTheImportedLogFunction) {
+  LogCallCapturer log_call_capturer;
+  log(42);
+  log(24);
+  log(999);
+  EXPECT_THAT(log_call_capturer.calls(), ElementsAre(42, 24, 999));
+}
+
+} // namespace
