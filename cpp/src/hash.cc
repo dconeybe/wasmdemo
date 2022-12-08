@@ -1,3 +1,4 @@
+#include "wasmdemo/benchmark.h"
 #include "wasmdemo/macros.h"
 
 /// start of md5 block
@@ -274,6 +275,11 @@ void myMemset(void* dst, int value, unsigned int count) {
   char* d = static_cast<char*>(dst);
   const char v = static_cast<char>(value);
   for (unsigned int i = 0; i < count; i++) {
+    // Call DoNotOptimize() to prevent clang's optmizer from replacing this
+    // entire function with the standard memset(). The standard memset() isn't
+    // available because we build with -nostdlib and when the standard memset()
+    // is referenced it results in link time errors: undefined symbol: memset.
+    DoNotOptimize(dst);
     d[i] = v;
   }
 }
