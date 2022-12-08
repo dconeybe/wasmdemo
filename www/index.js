@@ -72,6 +72,33 @@ async function loadWebAssemblyModule() {
   return new MyWebAssemblyInstance(instance);
 }
 
+async function onHashTestWasmClick() {
+  log("Hash Test Started");
+  try {
+    const webAssemblyInstance = await loadWebAssemblyModule();
+    const numHashes = parseInt(num1Element.value);
+    log(`Hashing ${numHashes} strings with WebAssembly MD5 algorithm`);
+    let accumulatedMs = 0;
+
+    for (let i=0; i<numHashes; i++) {
+      const textToHash = `projects/my-cool-project/databases/(default)/` +
+        `documents/collectionA/docA/collectionB/docB/collectionC/doc${i}`;
+      const startTime = performance.now();
+      webAssemblyInstance.hash(textToHash);
+      const endTime = performance.now();
+      accumulatedMs += endTime - startTime;
+    }
+
+    log(`Hashed ${numHashes} strings with WebAssembly MD5 algorithm ` +
+      `in ${accumulatedMs.toFixed(3)} ms`);
+  } catch (e) {
+    log(`ERROR: ${e}`);
+    console.log(e);
+  }
+
+  log("Hash Test Completed");
+}
+
 async function onRunClick() {
   log("Run Started");
   try {
@@ -137,6 +164,7 @@ function initialize() {
   textToReverseElement.onchange = onTextInputChange;
 
   document.getElementById("btnRun").onclick = onRunClick;
+  document.getElementById("btnHashTestWasm").onclick = onHashTestWasmClick;
   document.getElementById("btnClear").onclick = onClearClick;
 
   initializeInputElementValues();
