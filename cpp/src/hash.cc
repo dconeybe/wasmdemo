@@ -1,5 +1,6 @@
-#include "wasmdemo/benchmark.h"
 #include "wasmdemo/macros.h"
+
+#include <cstring>
 
 /// start of md5 block
 /*
@@ -223,14 +224,6 @@ void MD5_Init(MD5_CTX *ctx)
 	ctx->hi = 0;
 }
 
-void myMemcpy(void* dst, const void* src, const unsigned int size) {
-  char* d = static_cast<char*>(dst);
-  const char* s = static_cast<const char*>(src);
-  for (unsigned int i = 0; i < size; i++) {
-    d[i] = s[i];
-  }
-}
-
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size)
 {
 	MD5_u32plus saved_lo;
@@ -247,11 +240,11 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size)
 		available = 64 - used;
 
 		if (size < available) {
-			myMemcpy(&ctx->buffer[used], data, size);
+			std::memcpy(&ctx->buffer[used], data, size);
 			return;
 		}
 
-		myMemcpy(&ctx->buffer[used], data, available);
+		std::memcpy(&ctx->buffer[used], data, available);
 		data = (const unsigned char *)data + available;
 		size -= available;
 		body(ctx, ctx->buffer, 64);
@@ -262,7 +255,7 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size)
 		size &= 0x3f;
 	}
 
-	myMemcpy(ctx->buffer, data, size);
+	std::memcpy(ctx->buffer, data, size);
 }
 
 #define OUT(dst, src) \
@@ -270,19 +263,6 @@ void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size)
 	(dst)[1] = (unsigned char)((src) >> 8); \
 	(dst)[2] = (unsigned char)((src) >> 16); \
 	(dst)[3] = (unsigned char)((src) >> 24);
-
-void myMemset(void* dst, int value, unsigned int count) {
-  char* d = static_cast<char*>(dst);
-  const char v = static_cast<char>(value);
-  for (unsigned int i = 0; i < count; i++) {
-    // Call DoNotOptimize() to prevent clang's optmizer from replacing this
-    // entire function with the standard memset(). The standard memset() isn't
-    // available because we build with -nostdlib and when the standard memset()
-    // is referenced it results in link time errors: undefined symbol: memset.
-    DoNotOptimize(dst);
-    d[i] = v;
-  }
-}
 
 void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 {
@@ -295,13 +275,13 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 	available = 64 - used;
 
 	if (available < 8) {
-		myMemset(&ctx->buffer[used], 0, available);
+		std::memset(&ctx->buffer[used], 0, available);
 		body(ctx, ctx->buffer, 64);
 		used = 0;
 		available = 64;
 	}
 
-	myMemset(&ctx->buffer[used], 0, available - 8);
+	std::memset(&ctx->buffer[used], 0, available - 8);
 
 	ctx->lo <<= 3;
 	OUT(&ctx->buffer[56], ctx->lo)
@@ -314,7 +294,7 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 	OUT(&result[8], ctx->c)
 	OUT(&result[12], ctx->d)
 
-	myMemset(ctx, 0, sizeof(*ctx));
+	std::memset(ctx, 0, sizeof(*ctx));
 }
 
 /// end of md5 block
