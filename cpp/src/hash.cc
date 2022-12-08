@@ -1,4 +1,5 @@
 #include "wasmdemo/benchmark.h"
+#include "wasmdemo/hash.h"
 #include "wasmdemo/macros.h"
 
 /// start of md5 block
@@ -39,15 +40,6 @@
  * compile-time configuration.
  */
 
-/* Any 32-bit or wider unsigned integer data type will do */
-typedef unsigned int MD5_u32plus;
-
-typedef struct {
-  MD5_u32plus lo, hi;
-  MD5_u32plus a, b, c, d;
-  unsigned char buffer[64];
-  MD5_u32plus block[16];
-} MD5_CTX;
 
 /*
  * The basic MD5 functions.
