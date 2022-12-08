@@ -2,7 +2,6 @@ set(
   wasmdemo_srcs
   src/wasmdemo.cc
   src/hash.cc
-  src/bloom.cc
 )
 
 if(WASMDEMO_TARGET_WASM32)
