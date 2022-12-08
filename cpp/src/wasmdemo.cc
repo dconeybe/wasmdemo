@@ -4,6 +4,7 @@
 #include <string>
 
 #include "wasmdemo/macros.h"
+#include "wasmdemo/wasmdemo.h"
 
 WASM_IMPORT("base", "log")
 void log(int num);

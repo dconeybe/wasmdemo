@@ -19,14 +19,27 @@ else()
 
   target_include_directories(
     wasmdemo
-    PRIVATE
+    PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/include/nonwasm32"
+  )
+
+  add_executable(
+    wasmdemo_test
+    test/wasmdemo_imports_impl.cc
+    test/wasmdemo_test.cc
+  )
+
+  target_link_libraries(
+    wasmdemo_test
+    PRIVATE
+    wasmdemo
+    gmock_main
   )
 endif()
 
 target_include_directories(
   wasmdemo
-  PRIVATE
+  PUBLIC
   "${CMAKE_CURRENT_LIST_DIR}/include/common"
 )
 
