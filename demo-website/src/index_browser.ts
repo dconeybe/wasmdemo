@@ -57,7 +57,6 @@ async function runJSTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const { btnRunTestJS } = getUiElements();
   const startTime: DOMHighResTimeStamp = performance.now();
   const title = (ev.currentTarget as HTMLElement).innerText;
-  log('\n');
   log(`"${title}" started`, { className: 'startLine' });
   try {
     btnRunTestJS.disabled = true;
