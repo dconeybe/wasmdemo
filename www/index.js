@@ -7,6 +7,26 @@ const num2Element = document.getElementById("txtNum2");
 const textToReverseElement = document.getElementById("txtReverseString");
 const textToHashElement = document.getElementById("txtHashString");
 
+const ERRNO_SUCCESS = 0;
+const ERRNO_EACCES = 2;
+
+const WASI_IMPORTS = Object.freeze({
+  wasi_snapshot_preview1: {
+    fd_close: function(fd) {
+      log(`WARNING: fd_close(${fd}) unexpectedly invoked`);
+      return ERRNO_EACCES;
+    },
+    fd_seek: function(fd, offset, whence, new_offset_ptr) {
+      log(`WARNING: fd_seek(${fd}) unexpectedly invoked`);
+      return ERRNO_EACCES;
+    },
+    fd_write: function(fd, iovs, iovs_len, new_offset_ptr) {
+      log(`WARNING: fd_write(${fd}) unexpectedly invoked`);
+      return ERRNO_EACCES;
+    },
+  }
+});
+
 function log(text) {
   logElement.appendChild(document.createTextNode(text));
   logElement.appendChild(document.createElement('br'));
@@ -66,7 +86,8 @@ async function loadWebAssemblyModule() {
       log: function(num) {
         log(`${num} logged from WebAssembly!`);
       }
-    }
+    },
+    ...WASI_IMPORTS
   });
   const { instance } = wasmInstantiateResult;
   return new MyWebAssemblyInstance(instance);
