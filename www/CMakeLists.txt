@@ -12,7 +12,7 @@ function(add_filtered_file ARG_TARGET_NAME)
     ARG
     "" # zero-value arguments
     "SRC;DEST" # single-value arguments
-    "" # multi-value arguments
+    "EXPORTS" # multi-value arguments
   )
 
   if("${ARG_TARGET_NAME}" STREQUAL "")
@@ -23,15 +23,24 @@ function(add_filtered_file ARG_TARGET_NAME)
     message(FATAL_ERROR "DEST must be specified to ${CMAKE_CURRENT_FUNCTION}")
   endif()
 
+  set(
+    command_args
+    "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_LIST_DIR}/filter.py"
+    "${ARG_SRC}"
+    "${ARG_DEST}"
+    $<TARGET_FILE:wasmdemo>
+  )
+
+  foreach(ARG_EXPORT ${ARG_EXPORTS})
+    list(APPEND command_args "--mjs-export" "${ARG_EXPORT}")
+  endforeach()
+
   add_custom_command(
     OUTPUT
       "${ARG_DEST}"
     COMMAND
-      "${Python3_EXECUTABLE}"
-      "${CMAKE_CURRENT_LIST_DIR}/filter.py"
-      "${ARG_SRC}"
-      "${ARG_DEST}"
-      $<TARGET_FILE:wasmdemo>
+      ${command_args}
     MAIN_DEPENDENCY
       "${ARG_SRC}"
     DEPENDS
@@ -53,6 +62,13 @@ add_filtered_file(
   generate_index_js
   SRC "${CMAKE_CURRENT_LIST_DIR}/index.js"
   DEST "${CMAKE_CURRENT_BINARY_DIR}/index.js"
+)
+
+add_filtered_file(
+  generate_index_mjs
+  SRC "${CMAKE_CURRENT_LIST_DIR}/index.js"
+  DEST "${CMAKE_CURRENT_BINARY_DIR}/index.mjs"
+  EXPORTS "loadWebAssemblyModule"
 )
 
 add_filtered_file(

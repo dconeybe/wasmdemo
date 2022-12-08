@@ -1,20 +1,20 @@
+import argparse
 import datetime
 import base64
-import hashlib
 import pathlib
-import sys
 
 def main():
-  if len(sys.argv) < 4:
-    print("missing arguments", file=sys.stderr)
-    sys.exit(2)
-  if len(sys.argv) > 4:
-    print(f"unexpected argument: {sys.argv[4]}", file=sys.stderr)
-    sys.exit(2)
+  arg_parser = argparse.ArgumentParser()
+  arg_parser.add_argument("src_file")
+  arg_parser.add_argument("dest_file")
+  arg_parser.add_argument("wasm_file")
+  arg_parser.add_argument("--mjs-export", action="append", default=[])
+  parsed_args = arg_parser.parse_args()
 
-  src_file = pathlib.Path(sys.argv[1])
-  dest_file = pathlib.Path(sys.argv[2])
-  wasm_file = pathlib.Path(sys.argv[3])
+  src_file = pathlib.Path(parsed_args.src_file)
+  dest_file = pathlib.Path(parsed_args.dest_file)
+  wasm_file = pathlib.Path(parsed_args.wasm_file)
+  mjs_exports = tuple(parsed_args.mjs_export)
 
   wasm = wasm_file.read_bytes()
   wasm_base64 = base64.b64encode(wasm).decode("US-ASCII")
@@ -34,7 +34,14 @@ def main():
   )
 
   dest_file.parent.mkdir(parents=True, exist_ok=True)
-  dest_file.write_text(src_modified, "utf8")
+  with dest_file.open("wt", encoding="utf8") as f:
+    f.write(src_modified)
+
+    if len(mjs_exports) > 0:
+      f.write("\n")
+      f.write("export {")
+      f.write(", ".join(mjs_exports))
+      f.write("}\n")
 
 
 if __name__ == "__main__":

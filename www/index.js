@@ -179,7 +179,7 @@ function initializeInputElementValues() {
   initializeInputElementValue(textToReverseElement);
 }
 
-function initialize() {
+function initializeWasmDemoUI() {
   num1Element.onchange = onTextInputChange;
   num2Element.onchange = onTextInputChange;
   textToReverseElement.onchange = onTextInputChange;
@@ -190,5 +190,3 @@ function initialize() {
 
   initializeInputElementValues();
 }
-
-initialize();
