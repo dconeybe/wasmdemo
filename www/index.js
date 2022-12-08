@@ -69,13 +69,23 @@ function MyWebAssemblyInstance(instance) {
     const inputBuf = new Uint8Array(memory.buffer, offset, s.length);
     const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, inputBuf);
 
-    const HASH_OUTPUT_SIZE = 16;
-    offset += length * Uint8Array.BYTES_PER_ELEMENT;
-
     const outputBufPtr = hash(inputBuf, numBytes);
 
-    const outputBuf = new Uint8Array(memory.buffer, outputBufPtr, 16);
-    return [...outputBuf].map((x) => x.toString(16)).join(' ');
+    return new Uint8Array(memory.buffer, outputBufPtr, 16);
+  }
+
+  this.initBloom = function(bitmap, bitmapLength, padding, hashCount) {
+    instance.exports.initBloom(bitmap, bitmapLength, padding, hashCount);
+  }
+
+  // DO not call if you haven't called initBloom, or you'll get a null pointer
+  // exception!
+  this.mightContain = function(s) {
+    const {mightContain, memory} = instance.exports;
+    const buf = new Uint8Array(memory.buffer)
+    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, buf);
+
+    return mightContain(buf, numBytes);
   }
 }
 
