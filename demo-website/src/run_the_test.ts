@@ -64,10 +64,6 @@ export async function runTheHashTest(): Promise<void> {
     console.log(`Times left: ${numOfHash}`)
   }
 
-  log('\n');
   log(`JS MD5 Hash used: ${timeJS} milliseconds`);
-  log('\n');
-
   log(`Wasm MD5 Hash used: ${timeWasm} milliseconds`);
-  log('\n');
 }

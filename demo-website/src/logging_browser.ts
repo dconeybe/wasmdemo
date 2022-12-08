@@ -24,12 +24,18 @@ export interface LogOptions {
 }
 
 /** Logs a message to the UI and console.log(). */
-export function log(message: string, options: unknown): void {
+export function log(message: string, options: any): void {
   const typedOptions = options as Partial<LogOptions>;
   const alsoLogToConsole = typedOptions?.alsoLogToConsole ?? true;
   const htmlElement = getLogHtmlElement();
-  htmlElement.appendChild(document.createTextNode(message));
+  const span = document.createElement('span');
+  span.innerHTML = message;
+  if (options && options.className) {
+    span.classList.add(options.className);
+  }
+  htmlElement.appendChild(span);
   htmlElement.appendChild(document.createElement('br'));
+
   if (alsoLogToConsole) {
     console.log(message);
   }

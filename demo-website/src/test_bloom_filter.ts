@@ -70,7 +70,7 @@ function testBloomFilterAgainstExpectedResult(
       (time3 - time2) / membershipTestResults.length
     } milliseconds`
   );
-  log('\n\n');
+  log('\n');
 }
 
 export function testBloomFilter() {
