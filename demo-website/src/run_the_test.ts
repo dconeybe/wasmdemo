@@ -44,13 +44,13 @@ export async function runTheHashTest(): Promise<void> {
   ) as HTMLInputElement;
   let numOfHash = parseInt(textToHashElement.value) || 1;
   log(`MD5 Hash random strings for ${numOfHash} times.`);
-
+  const Prefix = 'projects/project-1/databases/database-1/documents/coll/doc';
   const webAssemblyInstance = await loadWebAssemblyModule();
   let timeJS = 0,
     timeWasm = 0;
 
   while (numOfHash > 0) {
-    let randomString = Math.random().toString(36).slice(2, 7);
+    const randomString = Prefix + Math.random().toString(36).slice(2, 7);
     const time1 = performance.now();
     getMd5HashValue(randomString);
     const time2 = performance.now();
@@ -61,7 +61,6 @@ export async function runTheHashTest(): Promise<void> {
     const time4 = performance.now();
     timeWasm += time4 - time3;
     numOfHash--;
-    console.log(`Times left: ${numOfHash}`)
   }
 
   log(`JS MD5 Hash used: ${timeJS} milliseconds`);

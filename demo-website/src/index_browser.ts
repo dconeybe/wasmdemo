@@ -57,8 +57,8 @@ async function runJSTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const { btnRunTestJS } = getUiElements();
   const startTime: DOMHighResTimeStamp = performance.now();
   const title = (ev.currentTarget as HTMLElement).innerText;
-  log("\n")
-  log(`"${title}" started`,{className:"startLine"});
+  log('\n');
+  log(`"${title}" started`, { className: 'startLine' });
   try {
     btnRunTestJS.disabled = true;
     await runTheJSTest();
@@ -75,7 +75,7 @@ async function runJSTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const endTime: DOMHighResTimeStamp = performance.now();
   const elapsedTimeStr = formatElapsedTime(startTime, endTime);
   log(`"${title}" completed in ${elapsedTimeStr}`);
-  log(`----------------------------------------------------------------------`)
+  log(`----------------------------------------------------------------------`);
 }
 
 async function runWasmTest(this: GlobalEventHandlers, ev: MouseEvent) {
@@ -83,7 +83,7 @@ async function runWasmTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const startTime: DOMHighResTimeStamp = performance.now();
   const title = (ev.currentTarget as HTMLElement).innerText;
 
-  log(`"${title}" started`,{className:"startLine"});
+  log(`"${title}" started`, { className: 'startLine' });
   try {
     btnRunTestWasm.disabled = true;
     await runTheWasmTest();
@@ -100,8 +100,7 @@ async function runWasmTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const endTime: DOMHighResTimeStamp = performance.now();
   const elapsedTimeStr = formatElapsedTime(startTime, endTime);
   log(`"${title}" completed in ${elapsedTimeStr}`);
-  log(`----------------------------------------------------------------------`)
-
+  log(`----------------------------------------------------------------------`);
 }
 
 async function runHashTest(this: GlobalEventHandlers, ev: MouseEvent) {
@@ -109,7 +108,7 @@ async function runHashTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const startTime: DOMHighResTimeStamp = performance.now();
   const title = (ev.currentTarget as HTMLElement).innerText;
 
-  log(`"${title}" started`,{className:"startLine"});
+  log(`"${title}" started`, { className: 'startLine' });
   try {
     btnHashString.disabled = true;
     await runTheHashTest();
@@ -126,7 +125,7 @@ async function runHashTest(this: GlobalEventHandlers, ev: MouseEvent) {
   const endTime: DOMHighResTimeStamp = performance.now();
   const elapsedTimeStr = formatElapsedTime(startTime, endTime);
   log(`"${title}" completed in ${elapsedTimeStr}`);
-  log(`----------------------------------------------------------------------`)
+  log(`----------------------------------------------------------------------`);
 }
 
 /**
