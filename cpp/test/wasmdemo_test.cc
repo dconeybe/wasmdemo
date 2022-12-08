@@ -61,4 +61,14 @@ TEST(wasmdemo, log_ShouldCallTheImportedLogFunction) {
   EXPECT_THAT(log_call_capturer.calls(), ElementsAre(42, 24, 999));
 }
 
+TEST(wasmdemo, add) {
+  EXPECT_EQ(add(0, 0), 0);
+  EXPECT_EQ(add(0, 1), 1);
+  EXPECT_EQ(add(0, -1), -1);
+  EXPECT_EQ(add(1, 1), 2);
+  EXPECT_EQ(add(-1, -1), -2);
+  EXPECT_EQ(add(123, 456), 579);
+  EXPECT_EQ(add(-123, 456), 333);
+}
+
 } // namespace
