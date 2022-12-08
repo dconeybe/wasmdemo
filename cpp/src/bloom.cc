@@ -27,8 +27,8 @@ class BloomFilter {
     MD5_Final(outputHash, &hashContext);
 
     // I think this is right??
-    uint64_t hash1 = outputHash[0];
-    uint64_t hash2 = outputHash[1];
+    uint64_t hash1 = reinterpret_cast<uint64_t*>(outputHash)[0];
+    uint64_t hash2 = reinterpret_cast<uint64_t*>(outputHash)[1];
 
     for (uint64_t i = 0; i < _hashCount; i++) {
       uint64_t index = getBitIndex(hash1, hash2, i);
