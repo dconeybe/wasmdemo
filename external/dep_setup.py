@@ -15,9 +15,8 @@ import shutil
 import sys
 import tempfile
 from typing import Any, IO, Optional
+import urllib.request
 import zipfile
-
-import requests
 
 
 DEFAULT_CACHE_DIR = pathlib.Path.home() / ".dep_setup_cache"
@@ -259,21 +258,23 @@ class Downloader:
       download_file = download_cache_file_file_path_pair.f
       logging.info("Downloading %s to %s", self.download_url, download_file_path)
 
-      session = requests.Session()
-      response = session.get(self.download_url, stream=True)
-      response.raise_for_status()
-      content_length = response.headers.get("Content-Length")
-      if content_length:
-        try:
-          content_length_int = int(content_length)
-        except ValueError:
-          pass
-        else:
-          logging.info("Downloading %s bytes", f"{content_length_int:,}")
-      downloaded_bytes_count = 0
-      for chunk in response.iter_content(chunk_size=None):
-        download_file.write(chunk)
-        downloaded_bytes_count += len(chunk)
+      with urllib.request.urlopen(self.download_url) as response:
+        content_length = response.headers.get("Content-Length")
+        if content_length:
+          try:
+            content_length_int = int(content_length)
+          except ValueError:
+            pass
+          else:
+            logging.info("Downloading %s bytes", f"{content_length_int:,}")
+
+        downloaded_bytes_count = 0
+        while True:
+          chunk = response.read(64 * 1024)
+          if not chunk:
+            break
+          download_file.write(chunk)
+          downloaded_bytes_count += len(chunk)
 
       logging.info(
         "Downloaded %s bytes from %s",
