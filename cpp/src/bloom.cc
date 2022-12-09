@@ -1,17 +1,23 @@
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include "wasmdemo/hash.h"
 #include "wasmdemo/macros.h"
 
 /// bloom filter code starts here
 class BloomFilter {
  public:
-  BloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount)
-  : _size(bitmapLength * 8 - padding), _bitmap(bitmap), _hashCount(hashCount) {
+  BloomFilter(uint32_t bitmapLength, uint32_t padding, uint32_t hashCount)
+  : _size(bitmapLength * 8 - padding), _bitmap(nullptr), _hashCount(hashCount) {
   }
 
   void reInitialize(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount) {
-    _size = bitmapLength * 8 - padding,
-    _bitmap = bitmap;
+    _size = bitmapLength * 8 - padding;
+    if (_bitmap != nullptr) {
+      free( _bitmap);
+    }
+    _bitmap = static_cast<uint8_t*>(malloc(bitmapLength));
+    memcpy(_bitmap, bitmap, bitmapLength);
     _hashCount = hashCount;
   }
 
@@ -43,7 +49,7 @@ class BloomFilter {
 
  private:
   uint64_t _size;
-  const uint8_t* _bitmap;
+  uint8_t* _bitmap;
   uint32_t _hashCount;
   uint64_t getBitIndex(uint64_t num1, uint64_t num2, uint64_t index) {
     // Calculate hashed value h(i) = h1 + (i * h2).
@@ -58,7 +64,7 @@ class BloomFilter {
 };
 /// bloom filter code ends here
 
-BloomFilter theFilter {nullptr, 0, 0, 0};
+BloomFilter theFilter {0, 0, 0};
 
 WASM_EXPORT("initBloom")
 void initBloom(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, const uint32_t hashCount) {
