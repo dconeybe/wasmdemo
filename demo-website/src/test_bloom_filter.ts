@@ -59,10 +59,10 @@ async function testBloomFilterAgainstExpectedResult(
   for (let i = 0; i < membershipTestResults.length; i++) {
     const expectedMembershipResult = membershipTestResults[i] === '1';
     const mightContain = bloomFilter.mightContain(documentPrefix + i);
-    // console.assert(
-    //   mightContain === expectedMembershipResult,
-    //   "MightContain result doesn't match the backend result."
-    // );
+    console.assert(
+      mightContain === expectedMembershipResult,
+      "MightContain result doesn't match the backend result."
+    );
   }
   const time4 = performance.now();
   log(
