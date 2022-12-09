@@ -39,6 +39,19 @@ function onClearClick() {
 }
 
 function MyWebAssemblyInstance(instance) {
+  this.malloc = function(size) {
+    if (! Number.isInteger(size)) {
+      throw new Error(`invalid size: ${size}`);
+    } else if (size <= 0 || size >= 2147483648) {
+      throw new Error(`size out of range: ${size}`);
+    }
+    return instance.exports.malloc(size);
+  }
+
+  this.free = function(ptr) {
+    instance.exports.free(ptr);
+  }
+
   this.echo = function(num) {
     if (typeof(num) !== 'number') {
       throw new Error(`num is not a number: ${num}`);
@@ -155,6 +168,11 @@ async function onRunClick() {
     log(`Calling hash("${textToHash}")`);
     const hashedText = webAssemblyInstance.hash(textToHash);
     log (`Hashed string: ${hashedText}`);
+
+    const mallocResult = webAssemblyInstance.malloc(8192);
+    log(`malloc(8192) returned ${mallocResult}`);
+    log(`Calling free(${mallocResult})`);
+    webAssemblyInstance.free(mallocResult);
   } catch (e) {
     log(`ERROR: ${e}`);
   }

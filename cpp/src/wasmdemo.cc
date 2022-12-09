@@ -30,3 +30,16 @@ void reverse_string(char* data, int size) {
     data[i] = s[static_cast<std::string::size_type>(i)];
   }
 }
+
+WASM_EXPORT("malloc")
+void* my_wasm_malloc(int size) {
+  if (size < 0) {
+    abort();
+  }
+  return malloc(static_cast<size_t>(size));
+}
+
+WASM_EXPORT("free")
+void my_wasm_free(void* ptr) {
+  free(ptr);
+}
