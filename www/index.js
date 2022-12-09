@@ -38,6 +38,24 @@ function onClearClick() {
   logElement.innerHTML = "";
 }
 
+function WasmString(instance, ptr, size) {
+  this.ptr = ptr;
+  this.size = size;
+
+  this.free = function() {
+    instance.exports.free(ptr);
+  }
+
+  this.newUint8Array = function() {
+    return new Uint8Array(instance.exports.memory.buffer, ptr, size);
+  }
+
+  this.toString = function() {
+    const uint8Array = this.newUint8Array();
+    return new TextDecoder("utf8").decode(uint8Array);
+  }
+}
+
 function MyWebAssemblyInstance(instance) {
   this.malloc = function(size) {
     if (! Number.isInteger(size)) {
@@ -62,31 +80,34 @@ function MyWebAssemblyInstance(instance) {
   }
 
   this.add = function(num1, num2) {
-    if (typeof(num1) !== 'number') {
-      throw new Error(`num1 is not a number: ${num}`);
+    if (! Number.isInteger(num1)) {
+      throw new Error(`invalid num1: ${num1}`);
     }
-    if (typeof(num2) !== 'number') {
-      throw new Error(`num2 is not a number: ${num}`);
+    if (! Number.isInteger(num2)) {
+      throw new Error(`invalid num2: ${num2}`);
     }
     return instance.exports.add(num1, num2);
   }
 
   this.reverse = function(s) {
-    const buf = new Uint8Array(instance.exports.memory.buffer)
-    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, buf);
-    instance.exports.reverse_string(buf, numBytes);
-    return new TextDecoder("ascii").decode(buf.subarray(0, numBytes));
+    const wasmString = this.newWasmString(s);
+    try {
+      instance.exports.reverse_string(wasmString.ptr, wasmString.size);
+      return wasmString.toString();
+    } finally {
+      wasmString.free();
+    }
   }
 
   this.hash = function(s) {
-    const {hash, memory} = instance.exports;
-    let offset = 0;
-    const inputBuf = new Uint8Array(memory.buffer, offset, s.length);
-    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, inputBuf);
-
-    const outputBufPtr = hash(inputBuf, numBytes);
-
-    return new Uint8Array(memory.buffer, outputBufPtr, 16);
+    const wasmString = this.newWasmString(s);
+    let outputBufPtr;
+    try {
+      outputBufPtr = instance.exports.hash(wasmString.ptr, wasmString.size);
+    } finally {
+      wasmString.free();
+    }
+    return new Uint8Array(instance.exports.memory.buffer, outputBufPtr, 16);
   }
 
   this.initBloom = function(bitmap, padding, hashCount) {
@@ -112,13 +133,7 @@ function MyWebAssemblyInstance(instance) {
     const ptr = this.malloc(mallocSize);
     const uint8Array = new Uint8Array(instance.exports.memory.buffer, ptr, mallocSize);
     const { written: numBytes } = new TextEncoder("utf8").encodeInto(valueStr, uint8Array);
-    return {
-      ptr,
-      size: numBytes,
-      free: function() {
-        instance.exports.free(ptr);
-      }
-    };
+    return new WasmString(instance, ptr, numBytes);
   }
 }
 
