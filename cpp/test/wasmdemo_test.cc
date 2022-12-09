@@ -55,10 +55,15 @@ TEST(wasmdemo, reverse_string_ShouldReverseLongStringWithOddLength) {
 
 TEST(wasmdemo, log_ShouldCallTheImportedLogFunction) {
   LogCallCapturer log_call_capturer;
-  log(42);
-  log(24);
-  log(999);
-  EXPECT_THAT(log_call_capturer.calls(), ElementsAre(42, 24, 999));
+  log("", 0);
+  log("a", 1);
+  log("hello", 5);
+  log("abcdefghijklmnop", 6);
+  EXPECT_THAT(log_call_capturer.calls(), ElementsAre(
+      std::string(""),
+      std::string("a"),
+      std::string("hello"),
+      std::string("abcdef")));
 }
 
 TEST(wasmdemo, add) {

@@ -1,6 +1,7 @@
 #ifndef _WASMDEMO_IMPORTS_IMPL_H_
 #define _WASMDEMO_IMPORTS_IMPL_H_
 
+#include <string>
 #include <vector>
 
 class LogCallCapturer {
@@ -8,12 +9,12 @@ class LogCallCapturer {
   LogCallCapturer();
   ~LogCallCapturer();
 
-  [[nodiscard]] std::vector<int> calls() const {
+  [[nodiscard]] std::vector<std::string> calls() const {
     return calls_;
   }
 
  private:
-  std::vector<int> calls_;
+  std::vector<std::string> calls_;
 };
 
 #endif // _WASMDEMO_IMPORTS_IMPL_H_

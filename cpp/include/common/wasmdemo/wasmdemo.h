@@ -4,10 +4,10 @@
 #include "wasmdemo/macros.h"
 
 WASM_IMPORT("base", "log")
-void log(int num);
+void log(const char* s, int32_t len);
 
 WASM_EXPORT("echo")
-void echo(int num);
+void echo(const char* s, int32_t len);
 
 WASM_EXPORT("add")
 int add(int num1, int num2);

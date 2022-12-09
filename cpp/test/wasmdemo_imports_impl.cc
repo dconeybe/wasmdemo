@@ -7,14 +7,17 @@
 
 namespace {
 
-std::vector<int>* gLogCallDest = nullptr;
+std::vector<std::string>* gLogCallDest = nullptr;
 
 } // namespace
 
 WASM_IMPORT("base", "log")
-void log(int num) {
+void log(const char* s, int32_t len) {
+  if (len < 0) {
+    abort();
+  }
   if (gLogCallDest) {
-    gLogCallDest->push_back(num);
+    gLogCallDest->push_back(std::string(s, static_cast<std::string::size_type>(len)));
   }
 }
 

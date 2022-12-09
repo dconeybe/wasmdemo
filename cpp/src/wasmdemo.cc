@@ -7,11 +7,11 @@
 #include "wasmdemo/wasmdemo.h"
 
 WASM_IMPORT("base", "log")
-void log(int num);
+void log(const char* s, int32_t len);
 
 WASM_EXPORT("echo")
-void echo(int num) {
-  log(num);
+void echo(const char* s, int32_t len) {
+  log(s, len);
 }
 
 WASM_EXPORT("add")

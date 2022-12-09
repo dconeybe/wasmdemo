@@ -52,11 +52,13 @@ function MyWebAssemblyInstance(instance) {
     instance.exports.free(ptr);
   }
 
-  this.echo = function(num) {
-    if (typeof(num) !== 'number') {
-      throw new Error(`num is not a number: ${num}`);
+  this.echo = function(message) {
+    const wasmMessage = this.newWasmString(message);
+    try {
+      instance.exports.echo(wasmMessage.ptr, wasmMessage.size);
+    } finally {
+      wasmMessage.free();
     }
-    instance.exports.echo(num);
   }
 
   this.add = function(num1, num2) {
@@ -103,19 +105,37 @@ function MyWebAssemblyInstance(instance) {
 
     return mightContain(buf, numBytes);
   }
+
+  this.newWasmString = function(value) {
+    const valueStr = `${value}`;
+    const mallocSize = valueStr.length * 4;
+    const ptr = this.malloc(mallocSize);
+    const uint8Array = new Uint8Array(instance.exports.memory.buffer, ptr, mallocSize);
+    const { written: numBytes } = new TextEncoder("utf8").encodeInto(valueStr, uint8Array);
+    return {
+      ptr,
+      size: numBytes,
+      free: function() {
+        instance.exports.free(ptr);
+      }
+    };
+  }
 }
 
 async function loadWebAssemblyModule() {
   const wasm = Uint8Array.from(atob(WASM_BASE64), v => v.charCodeAt(0));
-  const wasmInstantiateResult = await WebAssembly.instantiate(wasm, {
+  const instances = []
+  const { instance } = await WebAssembly.instantiate(wasm, {
     base: {
-      log: function(num) {
-        log(`${num} logged from WebAssembly!`);
+      log: function(ptr, size) {
+        const uint8Array = new Uint8Array(instances[0].exports.memory.buffer, ptr, size);
+        const message = new TextDecoder("utf8").decode(uint8Array);
+        log(`log(): ${message} (ptr=${ptr} size=${size})`);
       }
     },
     ...WASI_IMPORTS
   });
-  const { instance } = wasmInstantiateResult;
+  instances.push(instance);
   return new MyWebAssemblyInstance(instance);
 }
 
@@ -140,7 +160,7 @@ async function onHashTestWasmClick() {
       `in ${accumulatedMs.toFixed(3)} ms`);
   } catch (e) {
     log(`ERROR: ${e}`);
-    console.log(e);
+    console.log(e.stack);
   }
 
   log("Hash Test Completed");
@@ -159,7 +179,8 @@ async function onRunClick() {
     const addResult = webAssemblyInstance.add(num1, num2);
     log(`add(${num1}, ${num2}) returned ${addResult}`);
 
-    webAssemblyInstance.echo(addResult);
+    log(`Calling echo()`);
+    webAssemblyInstance.echo(`This string was passed to echo()!`);
 
     log(`Calling reverse("${textToReverse}")`);
     const reversedText = webAssemblyInstance.reverse(textToReverse);
@@ -175,6 +196,7 @@ async function onRunClick() {
     webAssemblyInstance.free(mallocResult);
   } catch (e) {
     log(`ERROR: ${e}`);
+    console.log(e.stack);
   }
 
   log("Run Completed");
