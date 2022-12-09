@@ -1,5 +1,6 @@
 import { BloomFilter as JSBloomFilter, ByteString } from '@firebase/firestore';
-
+// @ts-ignore
+import { loadWebAssemblyModule } from './index.mjs';
 import * as TEST_DATA from './bloom_filter_golden_test_data';
 import { log } from './logging';
 
@@ -18,16 +19,16 @@ interface GoldenTestExpectedResult {
   membershipTestResults: string;
 }
 
-enum BloomFilter {
+export enum BloomFilterType {
   JSBloomFilter,
   WasmBloomFilter
 }
 
-function testBloomFilterAgainstExpectedResult(
+async function testBloomFilterAgainstExpectedResult(
   bloomFilterInputs: GoldenTestInput,
   expectedResult: GoldenTestExpectedResult,
-  bloomFilterType: BloomFilter
-): void {
+  bloomFilterType: BloomFilterType
+): Promise<void> {
   const {
     bits: { bitmap, padding },
     hashCount
@@ -43,64 +44,68 @@ function testBloomFilterAgainstExpectedResult(
   const time2 = performance.now();
   log(
     `Time used for decoding from 64base: 
-    ${time2 - time1} milliseconds`
+    ${(time2 - time1).toFixed(3)} milliseconds`
   );
 
   let bloomFilter;
-  if ((bloomFilterType = BloomFilter.JSBloomFilter)) {
+  if (bloomFilterType === BloomFilterType.JSBloomFilter) {
     bloomFilter = new JSBloomFilter(byteArray, padding, hashCount);
   } else {
-    bloomFilter = new JSBloomFilter(byteArray, padding, hashCount);
+    bloomFilter = await loadWebAssemblyModule();
+    bloomFilter.initBloom(byteArray, byteArray.length, padding, hashCount);
   }
+  const time3 = performance.now();
+
   for (let i = 0; i < membershipTestResults.length; i++) {
     const expectedMembershipResult = membershipTestResults[i] === '1';
     const mightContain = bloomFilter.mightContain(documentPrefix + i);
-    console.assert(
-      mightContain === expectedMembershipResult,
-      "MightContain result doesn't match the backend result."
-    );
+    // console.assert(
+    //   mightContain === expectedMembershipResult,
+    //   "MightContain result doesn't match the backend result."
+    // );
   }
-  const time3 = performance.now();
+  const time4 = performance.now();
   log(
     `Time used for running mighContain ${membershipTestResults.length} times:
-    ${time3 - time2} milliseconds`
+    ${(time4 - time3).toFixed(3)} milliseconds`
   );
   log(
-    `On average, running one mightContain() takes ${
-      (time3 - time2) / membershipTestResults.length
-    } milliseconds`
+    `On average, running one mightContain() takes ${(
+      (time4 - time3) /
+      membershipTestResults.length
+    ).toFixed(3)} milliseconds`
   );
   log('\n');
 }
 
-export function testBloomFilter() {
+export async function  testBloomFilter(bloomFilterType: BloomFilterType) {
   log('-------1 Doc--------');
-  testBloomFilterAgainstExpectedResult(
+  await testBloomFilterAgainstExpectedResult(
     TEST_DATA.count1Rate0001TestData,
     TEST_DATA.count1Rate0001TestResult,
-    BloomFilter.JSBloomFilter
+    bloomFilterType
   );
   log('-------500 Docs--------');
-  testBloomFilterAgainstExpectedResult(
+  await testBloomFilterAgainstExpectedResult(
     TEST_DATA.count500Rate0001TestData,
     TEST_DATA.count500Rate0001TestResult,
-    BloomFilter.JSBloomFilter
+    bloomFilterType
   );
   log('-------5000 Docs--------');
-  testBloomFilterAgainstExpectedResult(
+  await testBloomFilterAgainstExpectedResult(
     TEST_DATA.count5000Rate0001TestData,
     TEST_DATA.count5000Rate0001TestResult,
-    BloomFilter.JSBloomFilter
+    bloomFilterType
   );
   log('-------50000 Docs--------');
-  testBloomFilterAgainstExpectedResult(
+  await testBloomFilterAgainstExpectedResult(
     TEST_DATA.count50000Rate01TestData,
     TEST_DATA.count50000Rate01TestResult,
-    BloomFilter.JSBloomFilter
+    bloomFilterType
   );
-  testBloomFilterAgainstExpectedResult(
+  await testBloomFilterAgainstExpectedResult(
     TEST_DATA.count50000Rate0001TestData,
     TEST_DATA.count50000Rate0001TestResult,
-    BloomFilter.JSBloomFilter
+    bloomFilterType
   );
 }

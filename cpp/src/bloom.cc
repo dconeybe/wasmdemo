@@ -5,11 +5,11 @@
 /// bloom filter code starts here
 class BloomFilter {
  public:
-  BloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint64_t padding, uint64_t hashCount)
+  BloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount)
   : _size(bitmapLength * 8 - padding), _bitmap(bitmap), _hashCount(hashCount) {
   }
 
-  void reInitialize(const uint8_t* bitmap, uint32_t bitmapLength, uint64_t padding, uint64_t hashCount) {
+  void reInitialize(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount) {
     _size = bitmapLength * 8 - padding,
     _bitmap = bitmap;
     _hashCount = hashCount;
@@ -32,7 +32,7 @@ class BloomFilter {
     uint64_t hash1 = castOutputHash[0];
     uint64_t hash2 = castOutputHash[1];
 
-    for (uint64_t i = 0; i < _hashCount; i++) {
+    for (uint32_t i = 0; i < _hashCount; i++) {
       uint64_t index = getBitIndex(hash1, hash2, i);
       if (!isBitSet(index)) {
         return false;
@@ -44,7 +44,7 @@ class BloomFilter {
  private:
   uint64_t _size;
   const uint8_t* _bitmap;
-  uint64_t _hashCount;
+  uint32_t _hashCount;
   uint64_t getBitIndex(uint64_t num1, uint64_t num2, uint64_t index) {
     // Calculate hashed value h(i) = h1 + (i * h2).
     uint64_t hashValue = num1 + (num2 * index);
@@ -61,7 +61,7 @@ class BloomFilter {
 BloomFilter theFilter {nullptr, 0, 0, 0};
 
 WASM_EXPORT("initBloom")
-void initBloom(const uint8_t* bitmap, uint32_t bitmapLength, uint64_t padding, const uint64_t hashCount) {
+void initBloom(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, const uint32_t hashCount) {
   theFilter.reInitialize(bitmap, bitmapLength, padding, hashCount);
 }
 

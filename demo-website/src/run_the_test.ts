@@ -15,27 +15,18 @@
  */
 
 import { log } from './logging';
-import { testBloomFilter } from './test_bloom_filter';
+import { testBloomFilter, BloomFilterType } from './test_bloom_filter';
 // @ts-ignore
-import { loadWebAssemblyModule } from './wasm/wasb';
+import { loadWebAssemblyModule } from './index.mjs';
 import { getMd5HashValue } from '@firebase/firestore';
 
+
 export async function runTheJSTest(): Promise<void> {
-  testBloomFilter();
+  await testBloomFilter(BloomFilterType.JSBloomFilter);
 }
 
 export async function runTheWasmTest(): Promise<void> {
-  const webAssemblyInstance = await loadWebAssemblyModule();
-  const addResult = webAssemblyInstance.add(1, 2);
-  log(`add(${1}, ${2}) returned ${addResult}`);
-
-  log(`Calling reverse("Hello World!")`);
-  const reversedText = webAssemblyInstance.reverse('Hello World!');
-  log(`Reversed string: ${reversedText}`);
-
-  log(`Calling hash("abc")`);
-  const hashedText = webAssemblyInstance.hash('abc');
-  log(`Hashed string: ${hashedText}`);
+  await testBloomFilter(BloomFilterType.WasmBloomFilter);
 }
 
 export async function runTheHashTest(): Promise<void> {
@@ -63,6 +54,6 @@ export async function runTheHashTest(): Promise<void> {
     numOfHash--;
   }
 
-  log(`JS MD5 Hash used: ${timeJS} milliseconds`);
-  log(`Wasm MD5 Hash used: ${timeWasm} milliseconds`);
+  log(`JS MD5 Hash used: ${timeJS.toFixed(3)} milliseconds`);
+  log(`Wasm MD5 Hash used: ${timeWasm.toFixed(3)} milliseconds`);
 }
