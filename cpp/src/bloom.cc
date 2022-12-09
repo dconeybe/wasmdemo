@@ -7,18 +7,14 @@
 /// bloom filter code starts here
 class BloomFilter {
  public:
-  BloomFilter(uint32_t bitmapLength, uint32_t padding, uint32_t hashCount)
-  : _size(bitmapLength * 8 - padding), _bitmap(nullptr), _hashCount(hashCount) {
-  }
-
-  void reInitialize(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount) {
-    _size = bitmapLength * 8 - padding;
-    if (_bitmap != nullptr) {
-      free( _bitmap);
-    }
+  BloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, uint32_t hashCount)
+  : _size(bitmapLength * 8 - padding), _hashCount(hashCount) {
     _bitmap = static_cast<uint8_t*>(malloc(bitmapLength));
     memcpy(_bitmap, bitmap, bitmapLength);
-    _hashCount = hashCount;
+  }
+
+  ~BloomFilter(){
+    free(_bitmap);
   }
 
   bool mightContain(char* value, uint32_t valueLength) {
@@ -64,14 +60,17 @@ class BloomFilter {
 };
 /// bloom filter code ends here
 
-BloomFilter theFilter {0, 0, 0};
+WASM_EXPORT("newBloomFilter")
+BloomFilter* newBloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, const uint32_t hashCount) {
+  return new BloomFilter(bitmap, bitmapLength, padding, hashCount);
+}
 
-WASM_EXPORT("initBloom")
-void initBloom(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, const uint32_t hashCount) {
-  theFilter.reInitialize(bitmap, bitmapLength, padding, hashCount);
+WASM_EXPORT("deleteBloomFilter")
+void deleteBloomFilter(BloomFilter* instance) {
+  delete instance;
 }
 
 WASM_EXPORT("mightContain")
-bool mightContain(char* value, uint32_t valueLength) {
-  return theFilter.mightContain(value, valueLength);
+bool mightContain(BloomFilter* filter, char* value, uint32_t valueLength) {
+  return filter->mightContain(value, valueLength);
 }

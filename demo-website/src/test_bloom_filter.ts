@@ -51,8 +51,14 @@ async function testBloomFilterAgainstExpectedResult(
   if (bloomFilterType === BloomFilterType.JSBloomFilter) {
     bloomFilter = new JSBloomFilter(byteArray, padding, hashCount);
   } else {
-    bloomFilter = await loadWebAssemblyModule();
-    bloomFilter.initBloom(byteArray, padding, hashCount);
+    const wasmModule = await loadWebAssemblyModule();
+    const bloomFilterPtr = wasmModule.newBloomFilter(byteArray, padding, hashCount);
+    // shape bloom filter object so it has the expected type signature
+    bloomFilter = {
+      // curry the first argument so that the function just takes one argument
+      mightContain: wasmModule.mightContain.bind(wasmModule, bloomFilterPtr),
+    }
+    // TODO: call deleteBloomFilter when finish using the filter
   }
   const time3 = performance.now();
 

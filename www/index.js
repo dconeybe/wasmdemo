@@ -114,21 +114,27 @@ function MyWebAssemblyInstance(instance) {
     return new Uint8Array(instance.exports.memory.buffer, outputBufPtr, 16);
   }
 
-  this.initBloom = function(bitmap, padding, hashCount) {
-    const {memory, initBloom} = instance.exports;
+  this.newBloomFilter = function(bitmap, padding, hashCount) {
+    const {memory, newBloomFilter} = instance.exports;
     const inputBuf = new Uint8Array(memory.buffer, bitmap.length);
     inputBuf.set(bitmap);
-    initBloom(bitmap, bitmap.length, padding, hashCount);
+    return newBloomFilter(bitmap, bitmap.length, padding, hashCount);
   }
 
-  // DO not call if you haven't called initBloom, or you'll get a null pointer
-  // exception!
-  this.mightContain = function(s) {
-    const {mightContain, memory} = instance.exports;
-    const buf = new Uint8Array(memory.buffer)
-    const { written: numBytes } = new TextEncoder("utf8").encodeInto(s, buf);
+  this.mightContain = function(filterPointer, s) {
+    const wasmString = this.newWasmString(s);
+    let result;
+    try {
+      result = instance.exports.mightContain(filterPointer, wasmString.ptr, wasmString.size);
+    } finally {
+      wasmString.free();
+    }
 
-    return mightContain(buf, numBytes);
+    return result;
+  }
+
+  this.deleteBloomFilter = function(filterPointer) {
+    instance.exports.deleteBloomFilter(filterPointer);
   }
 
   this.newWasmString = function(value) {
