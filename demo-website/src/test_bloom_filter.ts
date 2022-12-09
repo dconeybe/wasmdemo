@@ -52,7 +52,7 @@ async function testBloomFilterAgainstExpectedResult(
     bloomFilter = new JSBloomFilter(byteArray, padding, hashCount);
   } else {
     bloomFilter = await loadWebAssemblyModule();
-    bloomFilter.initBloom(byteArray, byteArray.length, padding, hashCount);
+    bloomFilter.initBloom(byteArray, padding, hashCount);
   }
   const time3 = performance.now();
 

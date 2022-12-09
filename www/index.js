@@ -74,8 +74,11 @@ function MyWebAssemblyInstance(instance) {
     return new Uint8Array(memory.buffer, outputBufPtr, 16);
   }
 
-  this.initBloom = function(bitmap, bitmapLength, padding, hashCount) {
-    instance.exports.initBloom(bitmap, bitmapLength, padding, hashCount);
+  this.initBloom = function(bitmap, padding, hashCount) {
+    const {memory, initBloom} = instance.exports;
+    const inputBuf = new Uint8Array(memory.buffer, bitmap.length);
+    inputBuf.set(bitmap);
+    initBloom(bitmap, bitmap.length, padding, hashCount);
   }
 
   // DO not call if you haven't called initBloom, or you'll get a null pointer
