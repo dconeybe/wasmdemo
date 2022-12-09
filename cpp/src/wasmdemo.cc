@@ -14,6 +14,13 @@ void echo(const char* s, int32_t len) {
   log(s, len);
 }
 
+WASM_EXPORT("echo_signed_unsigned")
+void echo_signed_unsigned(int32_t sint, uint32_t usint) {
+  const auto s = std::string("") + "signed=" + std::to_string(sint)
+      + " unsigned=" + std::to_string(usint);
+  log(s.c_str(), static_cast<int32_t>(s.length()));
+}
+
 WASM_EXPORT("add")
 int add(int num1, int num2) {
   return num1 + num2;

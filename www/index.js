@@ -79,6 +79,10 @@ function MyWebAssemblyInstance(instance) {
     }
   }
 
+  this.echo_signed_unsigned = function(num) {
+    instance.exports.echo_signed_unsigned(num);
+  }
+
   this.add = function(num1, num2) {
     if (! Number.isInteger(num1)) {
       throw new Error(`invalid num1: ${num1}`);
@@ -196,6 +200,8 @@ async function onRunClick() {
 
     log(`Calling echo()`);
     webAssemblyInstance.echo(`This string was passed to echo()!`);
+    log(`Calling echo_signed_unsigned()`);
+    webAssemblyInstance.echo_signed_unsigned(num1);
 
     log(`Calling reverse("${textToReverse}")`);
     const reversedText = webAssemblyInstance.reverse(textToReverse);
