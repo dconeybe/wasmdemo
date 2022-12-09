@@ -61,8 +61,11 @@ class BloomFilter {
 /// bloom filter code ends here
 
 WASM_EXPORT("newBloomFilter")
-BloomFilter* newBloomFilter(const uint8_t* bitmap, uint32_t bitmapLength, uint32_t padding, const uint32_t hashCount) {
-  return new BloomFilter(bitmap, bitmapLength, padding, hashCount);
+BloomFilter* newBloomFilter(const int8_t* bitmap, int32_t bitmapLength, int32_t padding, const int32_t hashCount) {
+  return new BloomFilter(reinterpret_cast<const uint8_t*>(bitmap),
+                         static_cast<uint32_t>(bitmapLength),
+                         static_cast<uint32_t>(padding),
+                         static_cast<uint32_t>(hashCount));
 }
 
 WASM_EXPORT("deleteBloomFilter")
@@ -71,6 +74,6 @@ void deleteBloomFilter(BloomFilter* instance) {
 }
 
 WASM_EXPORT("mightContain")
-bool mightContain(BloomFilter* filter, char* value, uint32_t valueLength) {
-  return filter->mightContain(value, valueLength);
+bool mightContain(BloomFilter* filter, char* value, int32_t valueLength) {
+  return filter->mightContain(value, static_cast<uint32_t>(valueLength));
 }
