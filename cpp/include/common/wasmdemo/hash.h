@@ -1,5 +1,5 @@
-#ifndef _WASMDEMO_HASH_H_
-#define _WASMDEMO_HASH_H_
+#ifndef WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_HASH_H_
+#define WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_HASH_H_
 
 /*
  * This is an OpenSSL-compatible implementation of the RSA Data Security, Inc.
@@ -40,4 +40,4 @@ extern void MD5_Init(MD5_CTX *ctx);
 extern void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size);
 extern void MD5_Final(unsigned char *result, MD5_CTX *ctx);
 
-#endif // _WASMDEMO_HASH_H_
+#endif  // WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_HASH_H_

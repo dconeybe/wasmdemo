@@ -1,4 +1,3 @@
-#include "wasmdemo/benchmark.h"
 #include "wasmdemo/hash.h"
 #include "wasmdemo/macros.h"
 

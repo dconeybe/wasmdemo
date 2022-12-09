@@ -1,5 +1,5 @@
-#ifndef _WASMDEMO_WASMDEMO_H_
-#define _WASMDEMO_WASMDEMO_H_
+#ifndef WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_WASMDEMO_H_
+#define WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_WASMDEMO_H_
 
 #include "wasmdemo/macros.h"
 
@@ -15,4 +15,4 @@ int add(int num1, int num2);
 WASM_EXPORT("reverse_string")
 void reverse_string(char* data, int size);
 
-#endif // _WASMDEMO_WASMDEMO_H_
+#endif  // WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_WASMDEMO_H_

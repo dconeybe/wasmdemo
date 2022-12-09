@@ -1,5 +1,5 @@
-#ifndef _WASMDEMO_IMPORTS_IMPL_H_
-#define _WASMDEMO_IMPORTS_IMPL_H_
+#ifndef WASMDEMO_CPP_TEST_WASMDEMO_IMPORTS_IMPL_H_
+#define WASMDEMO_CPP_TEST_WASMDEMO_IMPORTS_IMPL_H_
 
 #include <string>
 #include <vector>
@@ -17,4 +17,4 @@ class LogCallCapturer {
   std::vector<std::string> calls_;
 };
 
-#endif // _WASMDEMO_IMPORTS_IMPL_H_
+#endif  // WASMDEMO_CPP_TEST_WASMDEMO_IMPORTS_IMPL_H_
