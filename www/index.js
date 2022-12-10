@@ -83,7 +83,10 @@ function MyWebAssemblyInstance(instance) {
   }
 
   this.echo_signed_unsigned = function(num) {
-    instance.exports.echo_signed_unsigned(num);
+    if (! Number.isInteger(num)) {
+      throw new Error(`invalid num: ${num}`);
+    }
+    instance.exports.echo_signed_unsigned(num, num);
   }
 
   this.add = function(num1, num2) {
