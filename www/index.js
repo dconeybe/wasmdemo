@@ -10,6 +10,9 @@ const textToHashElement = document.getElementById("txtHashString");
 const ERRNO_SUCCESS = 0;
 const ERRNO_EACCES = 2;
 
+const INT32_MIN = -2147483648;
+const INT32_MAX = 2147483647;
+
 const WASI_IMPORTS = Object.freeze({
   wasi_snapshot_preview1: {
     fd_close: function(fd) {
@@ -60,7 +63,7 @@ function MyWebAssemblyInstance(instance) {
   this.malloc = function(size) {
     if (! Number.isInteger(size)) {
       throw new Error(`invalid size: ${size}`);
-    } else if (size <= 0 || size >= 2147483648) {
+    } else if (size <= 0 || size > INT32_MAX) {
       throw new Error(`size out of range: ${size}`);
     }
     return instance.exports.malloc(size);
