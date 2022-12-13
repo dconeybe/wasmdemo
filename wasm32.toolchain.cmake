@@ -41,10 +41,27 @@ set(CMAKE_C_FLAGS_INIT "")
 set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions -fno-rtti")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-fno-exceptions -fno-rtti")
 
-find_program(
-  WASMDEMO_WASMTIME_EXECUTABLE
-  wasmtime
-  REQUIRED
-  DOC "The wasmtime executable to use to run wasm32 binaries."
-)
-set(CMAKE_CROSSCOMPILING_EMULATOR wasmtime)
+if(NOT "${WASMTIME_EXECUTABLE}" STREQUAL "")
+  if(NOT DEFINED ENV{WASM32_CLANG_ROOT})
+    message(FATAL_ERROR "WASM32_CLANG_ROOT must be set")
+  endif()
+  set(WASM32_CLANG_ROOT "$ENV{WASM32_CLANG_ROOT}")
+endif()
+if(NOT IS_DIRECTORY "${WASM32_CLANG_ROOT}")
+  message(FATAL_ERROR "WASM32_CLANG_ROOT is not a directory: ${WASM32_CLANG_ROOT}")
+endif()
+
+if(NOT DEFINED WASMDEMO_WASMTIME_EXECUTABLE)
+  if(DEFINED ENV{WASMDEMO_WASMTIME_EXECUTABLE})
+    set(WASMDEMO_WASMTIME_EXECUTABLE "$ENV{WASMDEMO_WASMTIME_EXECUTABLE}")
+  else()
+    find_program(
+      WASMDEMO_WASMTIME_EXECUTABLE
+      wasmtime
+      REQUIRED
+      DOC "The wasmtime executable to use to run wasm32 binaries."
+    )
+  endif()
+endif()
+
+set(CMAKE_CROSSCOMPILING_EMULATOR "${WASMDEMO_WASMTIME_EXECUTABLE}")
