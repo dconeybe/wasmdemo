@@ -87,7 +87,7 @@ if(BUILD_TESTING)
   )
 
   add_test(
-    NAME wasmdemo_ctest
+    NAME wasmdemo_test
     COMMAND wasmdemo_test
   )
 endif()
