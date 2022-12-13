@@ -39,4 +39,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 set(CMAKE_C_FLAGS_INIT "")
 set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions -fno-rtti")
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--no-entry -fno-exceptions -fno-rtti")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-fno-exceptions -fno-rtti")

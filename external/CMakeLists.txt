@@ -75,42 +75,52 @@ function(
   add_subdirectory("${PACKAGE_DEST_DIR}")
 endfunction(dep_setup)
 
+if(WASMDEMO_TARGET_WASM32)
+  set(
+    GTEST_HAS_ABSL
+    OFF
+    CACHE
+    BOOL
+    "Tell googletest that absl and re2 are available."
+  )
+else()
+  set(
+    GTEST_HAS_ABSL
+    ON
+    CACHE
+    BOOL
+    "Tell googletest that absl and re2 are available."
+  )
+
+  set(
+    ABSL_PROPAGATE_CXX_STD
+    ON
+    CACHE
+    BOOL
+    "Recommended by abseil since it will be the default in the future."
+  )
+
+  dep_setup(
+    "abseil"
+    "6dab0bd99c5856e747fe35e928395ae80ca5e5f1"
+    "https://github.com/abseil/abseil-cpp/archive/__PACKAGE_VERSION__.zip"
+    "57bffa111dac74fd4b0c7d4652a2a36cf0fd93c35b097b3a131f9414aaedc0b3"
+  )
+
+  dep_setup(
+    "re2"
+    "4be240789d5b322df9f02b7e19c8651f3ccbf205"
+    "https://github.com/google/re2/archive/__PACKAGE_VERSION__.zip"
+    "99ce27e7f11ab52776fd80daa2cae0d4045a021e93a03ed514951ba3d25f3982"
+  )
+endif()
+
 set(
   INSTALL_GTEST
   OFF
   CACHE
   BOOL
   "Disable installation of googletest, since it's only embedded."
-)
-
-set(
-  GTEST_HAS_ABSL
-  ON
-  CACHE
-  BOOL
-  "Tell googletest that absl and re2 are available."
-)
-
-set(
-  ABSL_PROPAGATE_CXX_STD
-  ON
-  CACHE
-  BOOL
-  "Recommended by abseil since it will be the default in the future."
-)
-
-dep_setup(
-  "abseil"
-  "6dab0bd99c5856e747fe35e928395ae80ca5e5f1"
-  "https://github.com/abseil/abseil-cpp/archive/__PACKAGE_VERSION__.zip"
-  "57bffa111dac74fd4b0c7d4652a2a36cf0fd93c35b097b3a131f9414aaedc0b3"
-)
-
-dep_setup(
-  "re2"
-  "4be240789d5b322df9f02b7e19c8651f3ccbf205"
-  "https://github.com/google/re2/archive/__PACKAGE_VERSION__.zip"
-  "99ce27e7f11ab52776fd80daa2cae0d4045a021e93a03ed514951ba3d25f3982"
 )
 
 dep_setup(
