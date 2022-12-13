@@ -1,0 +1,18 @@
+diff -Naur googletest/googletest/cmake/internal_utils.cmake googletest_noexceptions/googletest/cmake/internal_utils.cmake
+--- googletest/googletest/cmake/internal_utils.cmake	2022-12-13 11:48:35.468421162 -0500
++++ googletest_noexceptions/googletest/cmake/internal_utils.cmake	2022-12-13 11:49:50.023517078 -0500
+@@ -141,7 +141,13 @@
+   set(cxx_base_flags "${cxx_base_flags} ${GTEST_HAS_PTHREAD_MACRO}")
+ 
+   # For building gtest's own tests and samples.
+-  set(cxx_exception "${cxx_base_flags} ${cxx_exception_flags}")
++
++  # Specify the "no exceptions" flag even for `cxx_exception`
++  # because the wasm32-wasi targets do not support exceptions
++  # and specifying -fexceptions leads to linker errors like
++  # "undefined symbol: __cxa_allocate_exception" and
++  # "undefined symbol: __cxa_throw".
++  set(cxx_exception "${cxx_base_flags} ${cxx_no_exception_flags}")
+   set(cxx_no_exception
+     "${CMAKE_CXX_FLAGS} ${cxx_base_flags} ${cxx_no_exception_flags}")
+   set(cxx_default "${cxx_exception}")
