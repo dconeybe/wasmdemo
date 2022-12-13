@@ -35,7 +35,7 @@ jobs:
         run: cmake --build build --verbose
 
       - name: CTest
-        run: cd build && ctest --label-regex wasmdemo --verbose
+        run: cd build && ctest --tests-regex wasmdemo --verbose
 
       - uses: actions/upload-artifact@v3
         with:
