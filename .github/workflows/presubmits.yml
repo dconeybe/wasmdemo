@@ -3,7 +3,7 @@ name: wasmdemo
 on: [pull_request]
 
 jobs:
-  wasmdemo desktop build and test:
+  wasmdemo_desktop_build_and_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
