@@ -3,7 +3,7 @@ name: wasmdemo
 on: [pull_request]
 
 jobs:
-  wasmdemo_desktop_build_and_test:
+  build_and_test_desktop:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,3 +22,9 @@ jobs:
 
       - name: CTest (Debug)
         run: ctest --test-dir build_debug --verbose
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build_output
+          path: |
+            build_debug/cpp/wasmdemo_test
