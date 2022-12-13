@@ -36,9 +36,3 @@ jobs:
 
       - name: CTest
         run: cd build && ctest --tests-regex wasmdemo --verbose
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: build_output
-          path: |
-            build/cpp/wasmdemo_test
