@@ -6,6 +6,11 @@ find_package (
     Interpreter
 )
 
+find_package(
+  Patch
+  REQUIRED
+)
+
 function(
   dep_setup
   ARG_PACKAGE_NAME
@@ -47,6 +52,7 @@ function(
     "${ARG_PACKAGE_VERSION}"
     "${ARG_DOWNLOAD_URL_FIXED}"
     "${ARG_EXPECTED_SHA256}"
+    "--patch_executable=${Patch_EXECUTABLE}"
     "${PACKAGE_DEST_DIR}"
   )
 
