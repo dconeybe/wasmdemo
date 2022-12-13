@@ -11,10 +11,12 @@ The following software must be installed in order to build the project:
 * ninja build tool.
 * clang and llvm with wasm32 support
 * wasi-sdk sysroot
+* wasmtime
 
-Cmake and Ninja can be installed in many ways. On macOS and Linux, I just use
-homebrew (i.e. `brew install cmake ninja`). It can also be installed using
-Python's package manager (i.e. `pip install cmake ninja`).
+cmake, ninja, and wasmtime can be installed in many ways. On macOS and Linux, I
+just use homebrew (i.e. `brew install cmake ninja wasmtime`). cmake and ninja
+can also be installed using Python's package manager
+(i.e. `pip install cmake ninja`).
 
 Operating Systems like macOS and Ubuntu often don't ship with a clang that
 includes wasm32 support. So you set up a clang that _does_ have wasm32 support.

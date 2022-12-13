@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import argparse
-from collections.abc import Generator, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 import contextlib
 import dataclasses
 import hashlib
@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import pathlib
+import subprocess
 import shutil
 import sys
 import tempfile
@@ -118,15 +119,30 @@ class PersistentCacheFile(CacheFile):
 
 class Stamp:
 
-  def __init__(self, package_name: str, package_version: str) -> None:
+  def __init__(
+    self,
+    package_name: str,
+    package_version: str,
+    package_sha256: str,
+    patch_executable: Optional[str],
+    patch_sha256s: Sequence[str],
+  ) -> None:
     self.package_name = package_name
     self.package_version = package_version
+    self.package_sha256 = package_sha256
+    self.patch_executable = patch_executable
+    self.patch_sha256s = patch_sha256s
 
   def save(self, file_path: pathlib.Path) -> None:
     data = {
       "package_name": str(self.package_name),
       "package_version": str(self.package_version),
+      "package_sha256": str(self.package_sha256),
     }
+    if self.patch_executable is not None:
+      data["patch_executable"] = self.patch_executable
+    if len(self.patch_sha256s) > 0:
+      data["patch_sha256s"] = list(self.patch_sha256s)
     with file_path.open("wt", encoding="utf8") as f:
       json.dump(data, f, ensure_ascii=False, indent=2, sort_keys=True)
 
@@ -154,23 +170,68 @@ class Stamp:
 
     decoded_json = json.loads(encoded_json)
     if not isinstance(decoded_json, Mapping):
-      raise cls.StampDecodeError(f"Decoded JSON should be a map, but got {type(decoded_json)}")
+      raise cls.StampDecodeError(
+        f"Decoded JSON should be a map, but got {type(decoded_json)}")
 
     package_name = decoded_json.get("package_name")
     if package_name is None:
       raise cls.StampDecodeError("package_name key/value pair is missing")
     if not isinstance(package_name, str):
-      raise cls.StampDecodeError(f"package_name should be a string, but got {type(package_name)}")
+      raise cls.StampDecodeError(
+        f"package_name should be a string, but got {type(package_name)}")
 
     package_version = decoded_json.get("package_version")
     if package_version is None:
       raise cls.StampDecodeError("package_version key/value pair is missing")
     if not isinstance(package_version, str):
-      raise cls.StampDecodeError(f"package_version should be a string, but got {type(package_version)}")
+      raise cls.StampDecodeError(
+        f"package_version should be a string, but got {type(package_version)}")
+
+    package_sha256 = decoded_json.get("package_sha256")
+    if package_sha256 is not None and not isinstance(package_sha256, str):
+      raise cls.StampDecodeError(
+        f"package_sha256 should be a string, but got {type(package_sha256)}")
+
+    patch_executable = decoded_json.get("patch_executable")
+    if patch_executable is not None and not isinstance(patch_executable, str):
+      raise cls.StampDecodeError(
+        f"patch_executable should be a string, but got {type(patch_executable)}")
+
+    patch_sha256s = decoded_json.get("patch_sha256s")
+    if patch_sha256s is not None:
+      if not isinstance(patch_sha256s, Sequence):
+        raise cls.StampDecodeError(
+          f"patch_sha256s should be a list, but got {type(patch_sha256s)}")
+      for (i, patch_sha256) in enumerate(patch_sha256s):
+        if not isinstance(patch_sha256, str):
+          raise cls.StampDecodeError(
+            f"patch_sha256s[{i}] should be a str, but got {type(patch_sha256)}")
 
     return cls(
       package_name=package_name,
       package_version=package_version,
+      package_sha256=package_sha256,
+      patch_executable=patch_executable,
+      patch_sha256s=patch_sha256s,
+    )
+
+  @classmethod
+  def create(
+    cls,
+    package_name: str,
+    package_version: str,
+    package_sha256: str,
+    patch_executable: Optional[pathlib.Path],
+    patches: Iterable[PatchInfo],
+  ) -> Stamp:
+    return cls(
+      package_name=package_name,
+      package_version=package_version,
+      package_sha256=package_sha256,
+      patch_executable=
+        None if patch_executable is None
+        else str(patch_executable.resolve()),
+      patch_sha256s=[patch.sha256 for patch in patches],
     )
 
   class StampDecodeError(Exception):
@@ -187,6 +248,8 @@ class Downloader:
     expected_sha256: str,
     dest_dir: pathlib.Path,
     cache_dir: Optional[pathlib.Path],
+    patch_executable: Optional[pathlib.Path],
+    patches: Sequence[PatchInfo],
   ) -> None:
     self.package_name = package_name
     self.package_version = package_version
@@ -194,8 +257,16 @@ class Downloader:
     self.expected_sha256 = expected_sha256
     self.dest_dir = dest_dir
     self.cache_dir = cache_dir
+    self.patch_executable = patch_executable
+    self.patches = patches
     self.stamp_file = dest_dir / "dep_setup.stamp.json"
-    self.stamp = Stamp(package_name=package_name, package_version=package_version)
+    self.stamp = Stamp.create(
+      package_name=package_name,
+      package_version=package_version,
+      package_sha256=expected_sha256,
+      patch_executable=patch_executable,
+      patches=patches,
+    )
 
   def run(self) -> None:
     if self.is_stamp_file_valid():
@@ -211,6 +282,7 @@ class Downloader:
       self.extract(zip_file_path_pair)
 
     self.fixup()
+    self.apply_patches()
     self.write_stamp_file()
 
   def is_stamp_file_valid(self) -> bool:
@@ -325,6 +397,26 @@ class Downloader:
     logging.debug("Deleting empty directory: %s", dest_subdir)
     dest_subdir.rmdir()
 
+  def apply_patches(self) -> None:
+    for patch_info in self.patches:
+      logging.info("Applying patch: %s", patch_info.path)
+      args = [
+        self.patch_executable,
+        '-p1',
+        '-i',
+        str(patch_info.path.resolve()),
+      ]
+      logging.info(
+        "Running command %s (in directory %s)",
+        subprocess.list2cmdline(str(arg) for arg in args),
+        self.dest_dir,
+      )
+      subprocess.run(
+        args,
+        cwd=self.dest_dir,
+        check=True,
+      )
+
   def dest_single_subdir(self) -> pathlib.Path:
     single_subdir = None
     for path_entry in self.dest_dir.iterdir():
@@ -353,6 +445,22 @@ class Downloader:
 
 
 @dataclasses.dataclass(frozen=True)
+class PatchInfo:
+  path: pathlib.Path
+  sha256: str
+
+  @classmethod
+  def create(cls, path: pathlib.Path) -> PatchInfo:
+    patch_bytes = path.read_bytes()
+    hasher = hashlib.sha256()
+    hasher.update(patch_bytes)
+    patch_sha256 = hasher.hexdigest()
+    return cls(
+      path=path,
+      sha256=patch_sha256,
+    )
+
+@dataclasses.dataclass(frozen=True)
 class ParsedArguments:
   package_name: str
   package_version: str
@@ -360,6 +468,8 @@ class ParsedArguments:
   sha256: str
   dest_dir: pathlib.Path
   cache_dir: Optional[pathlib.Path]
+  patch_executable: Optional[pathlib.Path]
+  patches: Sequence[PatchInfo]
 
 
 class ArgumentParseError(Exception):
@@ -377,7 +487,7 @@ def parse_arguments(args: Sequence[str]) -> ParsedArguments:
   arg_parser.add_argument("sha256")
   arg_parser.add_argument("dest_dir")
 
-  cache_dir_arg = arg_parser.add_argument(
+  arg_parser.add_argument(
     "--cache_dir",
     help=f"Default: {DEFAULT_CACHE_DIR}",
   )
@@ -391,6 +501,22 @@ def parse_arguments(args: Sequence[str]) -> ParsedArguments:
     action="store_false",
     dest=cache_enabled_arg.dest,
   )
+  patch_executable_arg = arg_parser.add_argument(
+    "--patch_executable",
+    help="The path of the `patch` executable to use to apply source patches.",
+  )
+  patch_arg = arg_parser.add_argument(
+    "--patch",
+    action="append",
+    default=[],
+    help=f"""
+      A patch file to apply to the source code.
+      May be specified zero or many times.
+      Each patch file specified will be applied in sequence.
+      If specified, then {'/'.join(patch_executable_arg.option_strings)}
+      must be specified too.
+    """,
+  )
 
   parse_args_result = arg_parser.parse_args(args[1:])
 
@@ -401,6 +527,30 @@ def parse_arguments(args: Sequence[str]) -> ParsedArguments:
   else:
     cache_dir = DEFAULT_CACHE_DIR
 
+  patch_executable = \
+    pathlib.Path(parse_args_result.patch_executable) \
+    if parse_args_result.patch_executable \
+    else None
+
+  patches: list[PatchInfo] = []
+  for patch_arg_str in parse_args_result.patch:
+    try:
+      patch_info = PatchInfo.create(pathlib.Path(patch_arg_str))
+    except (IOError, UnicodeDecodeError) as e:
+      arg_parser.error(
+        f"Unable to load patch file specified to "
+        f"{'/'.join(patch_arg.option_strings)}: {patch_arg_str} "
+        f"({e})"
+      )
+    else:
+      patches.append(patch_info)
+
+  if patches and patch_executable is None:
+    parser.error(
+      f"{'/'.join(patch_executable_arg.option_strings)} must be specified "
+      f"because {'/'.join(patch_arg.option_strings)} was specified."
+    )
+
   return ParsedArguments(
     package_name=parse_args_result.package_name,
     package_version=parse_args_result.package_version,
@@ -408,6 +558,8 @@ def parse_arguments(args: Sequence[str]) -> ParsedArguments:
     sha256=parse_args_result.sha256,
     dest_dir=pathlib.Path(parse_args_result.dest_dir),
     cache_dir=cache_dir,
+    patch_executable=patch_executable,
+    patches=tuple(patches),
   )
 
 
@@ -426,6 +578,8 @@ def main() -> None:
     expected_sha256=args.sha256,
     dest_dir=args.dest_dir,
     cache_dir=args.cache_dir,
+    patch_executable=args.patch_executable,
+    patches=args.patches,
   )
 
   downloader.run()

@@ -39,4 +39,12 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 set(CMAKE_C_FLAGS_INIT "")
 set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions -fno-rtti")
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--no-entry -fno-exceptions -fno-rtti")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-fno-exceptions -fno-rtti")
+
+find_program(
+  WASMDEMO_WASMTIME_EXECUTABLE
+  wasmtime
+  REQUIRED
+  DOC "The wasmtime executable to use to run wasm32 binaries."
+)
+set(CMAKE_CROSSCOMPILING_EMULATOR wasmtime)

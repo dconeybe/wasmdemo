@@ -6,6 +6,11 @@ find_package (
     Interpreter
 )
 
+find_package(
+  Patch
+  REQUIRED
+)
+
 function(
   dep_setup
   ARG_PACKAGE_NAME
@@ -13,6 +18,14 @@ function(
   ARG_DOWNLOAD_URL
   ARG_EXPECTED_SHA256
 )
+  cmake_parse_arguments(
+    PARSE_ARGV 0
+    "ARG" # <prefix>
+    "" # <options>
+    "" # <one_value_keywords>
+    "PATCHES" # <multi_value_keywords>
+  )
+
   if("${ARG_PACKAGE_NAME}" STREQUAL "")
     message(FATAL_ERROR "ARG_PACKAGE_NAME must be specified to ${CMAKE_CURRENT_FUNCTION}")
   endif()
@@ -48,7 +61,17 @@ function(
     "${ARG_DOWNLOAD_URL_FIXED}"
     "${ARG_EXPECTED_SHA256}"
     "${PACKAGE_DEST_DIR}"
+    "--patch_executable=${Patch_EXECUTABLE}"
   )
+
+  foreach(patch_file ${ARG_PATCHES})
+    list(
+      APPEND
+      DEP_SETUP_PY_ARGS
+      "--patch"
+      "${patch_file}"
+    )
+  endforeach()
 
   string(JOIN " " DEP_SETUP_PY_ARGS_STR ${DEP_SETUP_PY_ARGS})
   message(
@@ -75,6 +98,46 @@ function(
   add_subdirectory("${PACKAGE_DEST_DIR}")
 endfunction(dep_setup)
 
+if(WASMDEMO_TARGET_WASM32)
+  set(
+    GTEST_HAS_ABSL
+    OFF
+    CACHE
+    BOOL
+    "Tell googletest that absl and re2 are available."
+  )
+else()
+  set(
+    GTEST_HAS_ABSL
+    ON
+    CACHE
+    BOOL
+    "Tell googletest that absl and re2 are available."
+  )
+
+  set(
+    ABSL_PROPAGATE_CXX_STD
+    ON
+    CACHE
+    BOOL
+    "Recommended by abseil since it will be the default in the future."
+  )
+
+  dep_setup(
+    "abseil"
+    "6dab0bd99c5856e747fe35e928395ae80ca5e5f1"
+    "https://github.com/abseil/abseil-cpp/archive/__PACKAGE_VERSION__.zip"
+    "57bffa111dac74fd4b0c7d4652a2a36cf0fd93c35b097b3a131f9414aaedc0b3"
+  )
+
+  dep_setup(
+    "re2"
+    "4be240789d5b322df9f02b7e19c8651f3ccbf205"
+    "https://github.com/google/re2/archive/__PACKAGE_VERSION__.zip"
+    "99ce27e7f11ab52776fd80daa2cae0d4045a021e93a03ed514951ba3d25f3982"
+  )
+endif()
+
 set(
   INSTALL_GTEST
   OFF
@@ -83,39 +146,22 @@ set(
   "Disable installation of googletest, since it's only embedded."
 )
 
-set(
-  GTEST_HAS_ABSL
-  ON
-  CACHE
-  BOOL
-  "Tell googletest that absl and re2 are available."
-)
+if(BUILD_TESTING)
+  if(WASMDEMO_TARGET_WASM32)
+    set(
+      googletest_dep_setup_extra_args
+      "PATCHES"
+      "${CMAKE_CURRENT_LIST_DIR}/googletest.noexceptions.patch.txt"
+    )
+  else()
+    set(googletest_dep_setup_extra_args "")
+  endif()
 
-set(
-  ABSL_PROPAGATE_CXX_STD
-  ON
-  CACHE
-  BOOL
-  "Recommended by abseil since it will be the default in the future."
-)
-
-dep_setup(
-  "abseil"
-  "6dab0bd99c5856e747fe35e928395ae80ca5e5f1"
-  "https://github.com/abseil/abseil-cpp/archive/__PACKAGE_VERSION__.zip"
-  "57bffa111dac74fd4b0c7d4652a2a36cf0fd93c35b097b3a131f9414aaedc0b3"
-)
-
-dep_setup(
-  "re2"
-  "4be240789d5b322df9f02b7e19c8651f3ccbf205"
-  "https://github.com/google/re2/archive/__PACKAGE_VERSION__.zip"
-  "99ce27e7f11ab52776fd80daa2cae0d4045a021e93a03ed514951ba3d25f3982"
-)
-
-dep_setup(
-  "googletest"
-  "97459e54ec4f1882d219c413c929f719d9741ada"
-  "https://github.com/google/googletest/archive/__PACKAGE_VERSION__.zip"
-  "af17569ac5c05b148ae336a43ae7ab144d2cc5f3bfd3c9beb952cdd9a9fb0f75"
-)
+  dep_setup(
+    "googletest"
+    "97459e54ec4f1882d219c413c929f719d9741ada"
+    "https://github.com/google/googletest/archive/__PACKAGE_VERSION__.zip"
+    "af17569ac5c05b148ae336a43ae7ab144d2cc5f3bfd3c9beb952cdd9a9fb0f75"
+    ${googletest_dep_setup_extra_args}
+  )
+endif()

@@ -1,28 +1,72 @@
-set(
-  wasmdemo_srcs
+###############################################################################
+# wasmdemo_lib
+###############################################################################
+
+add_library(
+  wasmdemo_lib
+  OBJECT
   src/wasmdemo.cc
   src/hash.cc
   src/bloom.cc
 )
 
-if(WASMDEMO_TARGET_WASM32)
-  add_executable(wasmdemo ${wasmdemo_srcs})
-  set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
+target_compile_options(
+  wasmdemo_lib
+  PRIVATE
+  -Werror
+)
 
+target_link_options(
+  wasmdemo_lib
+  PRIVATE
+  -Werror
+)
+
+target_include_directories(
+  wasmdemo_lib
+  PUBLIC
+  "${CMAKE_CURRENT_LIST_DIR}/include/common"
+)
+
+if(WASMDEMO_TARGET_WASM32)
   target_include_directories(
-    wasmdemo
-    PRIVATE
+    wasmdemo_lib
+    PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/include/wasm32"
   )
 else()
-  add_library(wasmdemo ${wasmdemo_srcs})
-
   target_include_directories(
-    wasmdemo
+    wasmdemo_lib
     PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}/include/nonwasm32"
   )
+endif()
 
+###############################################################################
+# wasmdemo browser binary
+###############################################################################
+
+if(WASMDEMO_TARGET_WASM32)
+  add_executable(wasmdemo src/wasmdemo_main.cc)
+  set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
+  target_link_libraries(
+    wasmdemo
+    PUBLIC
+    wasmdemo_lib
+  )
+  target_link_options(
+    wasmdemo
+    PUBLIC
+    "-nostartfiles"
+    "-Wl,--no-entry"
+  )
+endif()
+
+###############################################################################
+# wasmdemo_lib unit tests
+###############################################################################
+
+if(BUILD_TESTING)
   add_executable(
     wasmdemo_test
     test/wasmdemo_imports_impl.cc
@@ -38,25 +82,12 @@ else()
   target_link_libraries(
     wasmdemo_test
     PRIVATE
-    wasmdemo
+    wasmdemo_lib
     gmock_main
   )
+
+  add_test(
+    NAME wasmdemo_test
+    COMMAND wasmdemo_test
+  )
 endif()
-
-target_include_directories(
-  wasmdemo
-  PUBLIC
-  "${CMAKE_CURRENT_LIST_DIR}/include/common"
-)
-
-target_compile_options(
-  wasmdemo
-  PRIVATE
-  -Werror
-)
-
-target_link_options(
-  wasmdemo
-  PRIVATE
-  -Werror
-)
