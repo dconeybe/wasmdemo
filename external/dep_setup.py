@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import pathlib
+import subprocess
 import shutil
 import sys
 import tempfile
@@ -281,6 +282,7 @@ class Downloader:
       self.extract(zip_file_path_pair)
 
     self.fixup()
+    self.apply_patches()
     self.write_stamp_file()
 
   def is_stamp_file_valid(self) -> bool:
@@ -395,6 +397,26 @@ class Downloader:
     logging.debug("Deleting empty directory: %s", dest_subdir)
     dest_subdir.rmdir()
 
+  def apply_patches(self) -> None:
+    for patch_info in self.patches:
+      logging.info("Applying patch: %s", patch_info.path)
+      args = [
+        self.patch_executable,
+        '-p1',
+        '-i',
+        str(patch_info.path.resolve()),
+      ]
+      logging.info(
+        "Running command %s (in directory %s)",
+        subprocess.list2cmdline(str(arg) for arg in args),
+        self.dest_dir,
+      )
+      subprocess.run(
+        args,
+        cwd=self.dest_dir,
+        check=True,
+      )
+
   def dest_single_subdir(self) -> pathlib.Path:
     single_subdir = None
     for path_entry in self.dest_dir.iterdir():
@@ -425,7 +447,6 @@ class Downloader:
 @dataclasses.dataclass(frozen=True)
 class PatchInfo:
   path: pathlib.Path
-  text: str
   sha256: str
 
   @classmethod
@@ -434,10 +455,8 @@ class PatchInfo:
     hasher = hashlib.sha256()
     hasher.update(patch_bytes)
     patch_sha256 = hasher.hexdigest()
-    patch_text = patch_bytes.decode("utf8")
     return cls(
       path=path,
-      text=patch_text,
       sha256=patch_sha256,
     )
 
@@ -525,6 +544,12 @@ def parse_arguments(args: Sequence[str]) -> ParsedArguments:
       )
     else:
       patches.append(patch_info)
+
+  if patches and patch_executable is None:
+    parser.error(
+      f"{'/'.join(patch_executable_arg.option_strings)} must be specified "
+      f"because {'/'.join(patch_arg.option_strings)} was specified."
+    )
 
   return ParsedArguments(
     package_name=parse_args_result.package_name,
