@@ -123,9 +123,11 @@ set(
   "Disable installation of googletest, since it's only embedded."
 )
 
-dep_setup(
-  "googletest"
-  "97459e54ec4f1882d219c413c929f719d9741ada"
-  "https://github.com/google/googletest/archive/__PACKAGE_VERSION__.zip"
-  "af17569ac5c05b148ae336a43ae7ab144d2cc5f3bfd3c9beb952cdd9a9fb0f75"
-)
+if(BUILD_TESTING)
+  dep_setup(
+    "googletest"
+    "97459e54ec4f1882d219c413c929f719d9741ada"
+    "https://github.com/google/googletest/archive/__PACKAGE_VERSION__.zip"
+    "af17569ac5c05b148ae336a43ae7ab144d2cc5f3bfd3c9beb952cdd9a9fb0f75"
+  )
+endif()

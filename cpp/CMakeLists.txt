@@ -1,3 +1,7 @@
+###############################################################################
+# wasmdemo_lib
+###############################################################################
+
 add_library(
   wasmdemo_lib
   OBJECT
@@ -38,6 +42,10 @@ else()
   )
 endif()
 
+###############################################################################
+# wasmdemo browser binary
+###############################################################################
+
 if(WASMDEMO_TARGET_WASM32)
   add_executable(wasmdemo src/wasmdemo_main.cc)
   set_property(TARGET wasmdemo PROPERTY OUTPUT_NAME wasmdemo.wasm)
@@ -54,21 +62,32 @@ if(WASMDEMO_TARGET_WASM32)
   )
 endif()
 
-add_executable(
-  wasmdemo_test
-  test/wasmdemo_imports_impl.cc
-  test/wasmdemo_test.cc
-)
+###############################################################################
+# wasmdemo_lib unit tests
+###############################################################################
 
-target_include_directories(
-  wasmdemo_test
-  PUBLIC
-  "${CMAKE_CURRENT_LIST_DIR}/test"
-)
+if(BUILD_TESTING)
+  add_executable(
+    wasmdemo_test
+    test/wasmdemo_imports_impl.cc
+    test/wasmdemo_test.cc
+  )
 
-target_link_libraries(
-  wasmdemo_test
-  PRIVATE
-  wasmdemo_lib
-  gmock_main
-)
+  target_include_directories(
+    wasmdemo_test
+    PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/test"
+  )
+
+  target_link_libraries(
+    wasmdemo_test
+    PRIVATE
+    wasmdemo_lib
+    gmock_main
+  )
+
+  add_test(
+    NAME wasmdemo_ctest
+    COMMAND wasmdemo_test
+  )
+endif()

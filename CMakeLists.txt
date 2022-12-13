@@ -11,6 +11,17 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(CTest)
+message(STATUS "${CMAKE_CURRENT_LIST_FILE}: BUILD_TESTING=${BUILD_TESTING}")
+if(BUILD_TESTING)
+  enable_testing()
+
+  # Enable official support for tests with whitespace and other special
+  # characters in the name specified to add_test().
+  # https://cmake.org/cmake/help/v3.19/policy/CMP0110.html
+  cmake_policy(SET CMP0110 NEW)
+endif()
+
 if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "wasm32")
   set(WASMDEMO_TARGET_WASM32 YES)
 else()
