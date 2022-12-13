@@ -122,9 +122,12 @@ function MyWebAssemblyInstance(instance) {
 
   this.newBloomFilter = function(bitmap, padding, hashCount) {
     const {memory, newBloomFilter} = instance.exports;
-    const inputBuf = new Uint8Array(memory.buffer, bitmap.length);
+    const bufPtr = this.malloc(bitmap.length);
+    const inputBuf = new Uint8Array(memory.buffer, bufPtr, bitmap.length);
     inputBuf.set(bitmap);
-    return newBloomFilter(bitmap, bitmap.length, padding, hashCount);
+    const filterPtr = newBloomFilter(bufPtr, bitmap.length, padding, hashCount);
+    this.free(bufPtr);
+    return filterPtr;
   }
 
   this.mightContain = function(filterPointer, s) {

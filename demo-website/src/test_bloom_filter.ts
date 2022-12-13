@@ -66,7 +66,7 @@ async function testBloomFilterAgainstExpectedResult(
     const expectedMembershipResult = membershipTestResults[i] === '1';
     const mightContain = bloomFilter.mightContain(documentPrefix + i);
     console.assert(
-      mightContain === expectedMembershipResult,
+        mightContain == expectedMembershipResult,
       "MightContain result doesn't match the backend result."
     );
   }
