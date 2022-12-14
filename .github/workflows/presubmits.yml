@@ -47,26 +47,60 @@ jobs:
       - name: cache ccache directory
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/ccache_cache
+          path: ccache_cache
           key: build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}
           restore-keys: |
             build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_
             build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_
             build_${{ matrix.target_arch }}_${{ matrix.build_type }}_
 
-      - name: install wasi-sdk and wasmtime (wasm32)
+      - name: cache wasi-sdk
+        if: matrix.target_arch == 'wasm32'
+        uses: actions/cache@v3
+        with:
+          path: wasi-sdk-17.0-linux.tar.gz
+          key: wasi-sdk-17.0-linux.tar.gz
+
+      - name: install wasi-sdk (wasm32)
         if: matrix.target_arch == 'wasm32'
         shell: bash
         run: |
           set -euo pipefail
-
-          wget --progress=dot:giga https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+          if [[ ! -e wasi-sdk-17.0-linux.tar.gz ]] ; then
+            wget --progress=dot:giga https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+          fi
           tar xf wasi-sdk-17.0-linux.tar.gz
-          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
+          export WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)
+          echo WASM32_CLANG_ROOT=${WASM32_CLANG_ROOT}
+          if [[ ! -e ${WASM32_CLANG_ROOT} ]] ; then
+            echo "ERROR: WASM32_CLANG_ROOT not found: ${WASM32_CLANG_ROOT}"
+            exit 1
+          fi
+          echo "WASM32_CLANG_ROOT=${WASM32_CLANG_ROOT}" >>${GITHUB_ENV}
 
-          wget --progress=dot:giga https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
+      - name: cache wasmtime
+        if: matrix.target_arch == 'wasm32'
+        uses: actions/cache@v3
+        with:
+          path: wasmtime-v3.0.1-x86_64-linux.tar.xz
+          key: wasmtime-v3.0.1-x86_64-linux.tar.xz
+
+      - name: install wasmtime (wasm32)
+        if: matrix.target_arch == 'wasm32'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -e wasmtime-v3.0.1-x86_64-linux.tar.xz ]] ; then
+            wget --progress=dot:giga https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
+          fi
           tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
-          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
+          export WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)
+          echo WASMDEMO_WASMTIME_EXECUTABLE=${WASMDEMO_WASMTIME_EXECUTABLE}
+          if [[ ! -e ${WASMDEMO_WASMTIME_EXECUTABLE} ]] ; then
+            echo "ERROR: WASMDEMO_WASMTIME_EXECUTABLE not found: ${WASMDEMO_WASMTIME_EXECUTABLE}"
+            exit 1
+          fi
+          echo "WASMDEMO_WASMTIME_EXECUTABLE=${WASMDEMO_WASMTIME_EXECUTABLE}" >>${GITHUB_ENV}
 
       - name: cmake Configure (linux)
         if: matrix.target_arch == 'linux'
