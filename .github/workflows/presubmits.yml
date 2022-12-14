@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: 3.9
 
+      - name: Install Prerequisites
+        run: sudo apt-get install cmake ninja-build
+
       - name: Cmake Configure
         run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
 
