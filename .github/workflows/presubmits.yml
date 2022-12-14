@@ -23,8 +23,18 @@ jobs:
           python-version: 3.9
 
       - name: apt-get install prerequisites
-        run: sudo apt-get install cmake ninja-build
-      
+        run: sudo apt-get install cmake ninja-build ccache
+
+      - name: ccache setup
+        run: |
+          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >>${GITHUB_ENV}
+          echo "CCACHE_DIR=${GITHUB_WORKSPACE}/ccache_cache" >>${GITHUB_ENV}
+          echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
+          echo "CCACHE_COMPRESS=1" >>${GITHUB_ENV}
+          echo "CCACHE_COMPRESSLEVEL=-1" >>${GITHUB_ENV}
+          echo "CCACHE_MAXSIZE=200M" >>${GITHUB_ENV}
+          ccache --show-config
+
       - name: install wasi-sdk (wasm32)
         if: matrix.target_arch == 'wasm32'
         run: |
@@ -41,14 +51,36 @@ jobs:
 
       - name: cmake Configure (linux)
         if: matrix.target_arch == 'linux'
-        run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        run: |
+          export CC=clang CXX=clang++
+          cmake \
+            -S . \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -G Ninja
 
       - name: cmake Configure (wasm32)
         if: matrix.target_arch == 'wasm32'
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_TOOLCHAIN_FILE=wasm32.toolchain.cmake
+        run: |
+          cmake \
+            -S . \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=wasm32.toolchain.cmake \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+            -G Ninja
 
       - name: cmake --build
         run: cmake --build build --verbose
 
       - name: ctest
         run: cd build && ctest --tests-regex wasmdemo --verbose
+
+      - name: ccache statistics
+        run: |
+          ccache --show-stats -v -v
+          ccache --show-config
+          ccache --show-compression
