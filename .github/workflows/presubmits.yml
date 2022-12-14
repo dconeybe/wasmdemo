@@ -9,8 +9,10 @@ concurrency:
 jobs:
   build_and_test_desktop:
     name: test_${{ matrix.target_arch }}_${{ matrix.build_type }}
+    continue-on-error: false
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         build_type: ["Debug", "Release"]
         target_arch: ["wasm32", "linux"]
@@ -23,32 +25,123 @@ jobs:
           python-version: 3.9
 
       - name: apt-get install prerequisites
-        run: sudo apt-get install cmake ninja-build
+        shell: bash
+        run: exec sudo apt-get install cmake ninja-build ccache
+
+      - name: ccache setup
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CCACHE_BASEDIR=${{ github.workspace }}" >>${GITHUB_ENV}
+          echo "CCACHE_DIR=${{ github.workspace }}/ccache_cache" >>${GITHUB_ENV}
+          echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
+          echo "CCACHE_COMPRESS=1" >>${GITHUB_ENV}
+          echo "CCACHE_COMPRESSLEVEL=-1" >>${GITHUB_ENV}
+          echo "CCACHE_MAXSIZE=200M" >>${GITHUB_ENV}
       
+      - name: ccache --show-config
+        continue-on-error: true
+        shell: bash
+        run: exec ccache --show-config
+      
+      - name: actions/cache for ccache
+        uses: actions/cache@v3
+        with:
+          path: ccache_cache
+          key: build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}
+          restore-keys: |
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_
+
+      - name: actions/cache for wasi-sdk
+        if: matrix.target_arch == 'wasm32'
+        uses: actions/cache@v3
+        with:
+          path: wasi-sdk-17.0-linux.tar.gz
+          key: wasi-sdk-17.0-linux.tar.gz
+
       - name: install wasi-sdk (wasm32)
         if: matrix.target_arch == 'wasm32'
+        shell: bash
         run: |
-          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+          set -euo pipefail
+          if [[ ! -e wasi-sdk-17.0-linux.tar.gz ]] ; then
+            wget --progress=dot:giga https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+          fi
           tar xf wasi-sdk-17.0-linux.tar.gz
-          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
+          export WASM32_CLANG_ROOT="$PWD/wasi-sdk-17.0"
+          echo WASM32_CLANG_ROOT=${WASM32_CLANG_ROOT}
+          if [[ ! -e ${WASM32_CLANG_ROOT} ]] ; then
+            echo "ERROR: WASM32_CLANG_ROOT not found: ${WASM32_CLANG_ROOT}"
+            exit 1
+          fi
+          echo "WASM32_CLANG_ROOT=${WASM32_CLANG_ROOT}" >>${GITHUB_ENV}
+
+      - name: actions/cache for wasmtime
+        if: matrix.target_arch == 'wasm32'
+        uses: actions/cache@v3
+        with:
+          path: wasmtime-v3.0.1-x86_64-linux.tar.xz
+          key: wasmtime-v3.0.1-x86_64-linux.tar.xz
 
       - name: install wasmtime (wasm32)
         if: matrix.target_arch == 'wasm32'
+        shell: bash
         run: |
-          wget https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
+          set -euo pipefail
+          if [[ ! -e wasmtime-v3.0.1-x86_64-linux.tar.xz ]] ; then
+            wget --progress=dot:giga https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
+          fi
           tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
-          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
+          export WASMDEMO_WASMTIME_EXECUTABLE="$PWD/wasmtime-v3.0.1-x86_64-linux/wasmtime"
+          echo WASMDEMO_WASMTIME_EXECUTABLE=${WASMDEMO_WASMTIME_EXECUTABLE}
+          if [[ ! -e ${WASMDEMO_WASMTIME_EXECUTABLE} ]] ; then
+            echo "ERROR: WASMDEMO_WASMTIME_EXECUTABLE not found: ${WASMDEMO_WASMTIME_EXECUTABLE}"
+            exit 1
+          fi
+          echo "WASMDEMO_WASMTIME_EXECUTABLE=${WASMDEMO_WASMTIME_EXECUTABLE}" >>${GITHUB_ENV}
 
-      - name: cmake Configure (linux)
+      - name: cmake configure (linux)
         if: matrix.target_arch == 'linux'
-        run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        shell: bash
+        run: |
+          export CC=clang CXX=clang++
+          exec cmake \
+            -S . \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -G Ninja
 
-      - name: cmake Configure (wasm32)
+      - name: cmake configure (wasm32)
         if: matrix.target_arch == 'wasm32'
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_TOOLCHAIN_FILE=wasm32.toolchain.cmake
+        shell: bash
+        run: |
+          exec cmake \
+            -S . \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=wasm32.toolchain.cmake \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -G Ninja
 
       - name: cmake --build
-        run: cmake --build build --verbose
+        shell: bash
+        run: exec cmake --build build --verbose
 
       - name: ctest
-        run: cd build && ctest --tests-regex wasmdemo --verbose
+        shell: bash
+        run: cd build && exec ctest --tests-regex wasmdemo --verbose
+
+      - name: ccache --show-stats
+        continue-on-error: true
+        shell: bash
+        run: exec ccache --show-stats -v -v
+
+      - name: ccache --show-compression
+        continue-on-error: true
+        shell: bash
+        run: exec ccache --show-compression
