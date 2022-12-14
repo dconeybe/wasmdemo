@@ -31,7 +31,7 @@ jobs:
       - name: ccache setup
         shell: bash
         run: |
-          set -xv
+          set -x
           echo "CCACHE_BASEDIR=${{ github.workspace }}" >>${GITHUB_ENV}
           echo "CCACHE_DIR=${{ github.workspace }}/ccache_cache" >>${GITHUB_ENV}
           echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
@@ -108,7 +108,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          set -xv
+          set -x
           ccache --show-stats -v -v
           ccache --show-config
           ccache --show-compression
