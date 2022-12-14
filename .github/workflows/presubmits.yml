@@ -31,6 +31,7 @@ jobs:
       - name: ccache setup
         shell: bash
         run: |
+          set -xv
           echo "CCACHE_BASEDIR=${{ github.workspace }}" >>${GITHUB_ENV}
           echo "CCACHE_DIR=${{ github.workspace }}/ccache_cache" >>${GITHUB_ENV}
           echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
@@ -39,8 +40,19 @@ jobs:
           echo "CCACHE_MAXSIZE=200M" >>${GITHUB_ENV}
       
       - name: ccache --show-config
+        continue-on-error: true
         shell: bash
         run: ccache --show-config
+      
+      - name: cache ccache directory
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/ccache_cache
+          key: build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_${{ github.run_attempt }}
+          restore-keys: |
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_${{ github.run_number }}_
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_
+            build_${{ matrix.target_arch }}_${{ matrix.build_type }}_
 
       - name: install wasi-sdk (wasm32)
         if: matrix.target_arch == 'wasm32'
@@ -93,8 +105,10 @@ jobs:
         run: cd build && ctest --tests-regex wasmdemo --verbose
 
       - name: ccache statistics
+        continue-on-error: true
         shell: bash
         run: |
+          set -xv
           ccache --show-stats -v -v
           ccache --show-config
           ccache --show-compression
