@@ -26,12 +26,12 @@ jobs:
 
       - name: apt-get install prerequisites
         shell: bash
-        run: sudo apt-get install cmake ninja-build ccache
+        run: exec sudo apt-get install cmake ninja-build ccache
 
       - name: ccache setup
         shell: bash
         run: |
-          set -x
+          set -euo pipefail
           echo "CCACHE_BASEDIR=${{ github.workspace }}" >>${GITHUB_ENV}
           echo "CCACHE_DIR=${{ github.workspace }}/ccache_cache" >>${GITHUB_ENV}
           echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
@@ -42,7 +42,7 @@ jobs:
       - name: ccache --show-config
         continue-on-error: true
         shell: bash
-        run: ccache --show-config
+        run: exec ccache --show-config
       
       - name: cache ccache directory
         uses: actions/cache@v3
@@ -54,18 +54,16 @@ jobs:
             build_${{ matrix.target_arch }}_${{ matrix.build_type }}_${{ github.run_id }}_
             build_${{ matrix.target_arch }}_${{ matrix.build_type }}_
 
-      - name: install wasi-sdk (wasm32)
+      - name: install wasi-sdk and wasmtime (wasm32)
         if: matrix.target_arch == 'wasm32'
         shell: bash
         run: |
+          set -euo pipefail
+
           wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
           tar xf wasi-sdk-17.0-linux.tar.gz
           echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
 
-      - name: install wasmtime (wasm32)
-        if: matrix.target_arch == 'wasm32'
-        shell: bash
-        run: |
           wget https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
           tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
           echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
@@ -75,7 +73,7 @@ jobs:
         shell: bash
         run: |
           export CC=clang CXX=clang++
-          cmake \
+          exec cmake \
             -S . \
             -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
@@ -87,7 +85,7 @@ jobs:
         if: matrix.target_arch == 'wasm32'
         shell: bash
         run: |
-          cmake \
+          exec cmake \
             -S . \
             -B build \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
@@ -98,17 +96,16 @@ jobs:
 
       - name: cmake --build
         shell: bash
-        run: cmake --build build --verbose
+        run: exec cmake --build build --verbose
 
       - name: ctest
         shell: bash
-        run: cd build && ctest --tests-regex wasmdemo --verbose
+        run: cd build && exec ctest --tests-regex wasmdemo --verbose
 
       - name: ccache statistics
         continue-on-error: true
         shell: bash
         run: |
-          set -x
           ccache --show-stats -v -v
           ccache --show-config
           ccache --show-compression
