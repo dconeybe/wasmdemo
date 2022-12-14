@@ -1,0 +1,38 @@
+name: wasmdemo
+
+on: [pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test_desktop:
+    name: build_and_test_desktop_${{ matrix.config.build_type }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config:
+          - {
+            build_type: "Debug"
+          }
+          - {
+            build_type: "Release"
+          }
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install Prerequisites
+        run: sudo apt-get install cmake ninja-build
+
+      - name: Cmake Configure
+        run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+
+      - name: Cmake Build
+        run: cmake --build build --verbose
+
+      - name: CTest
+        run: cd build && ctest --tests-regex wasmdemo --verbose
