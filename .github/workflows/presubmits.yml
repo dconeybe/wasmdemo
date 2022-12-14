@@ -8,31 +8,47 @@ concurrency:
 
 jobs:
   build_and_test_desktop:
-    name: build_and_test_desktop_${{ matrix.config.build_type }}
+    name: test_${{ matrix.target_arch }}_${{ matrix.build_type }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        config:
-          - {
-            build_type: "Debug"
-          }
-          - {
-            build_type: "Release"
-          }
+        build_type: ["Debug", "Release"]
+        target_arch: ["wasm32", "linux"]
+
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      - name: Install Prerequisites
+      - name: apt-get install prerequisites
         run: sudo apt-get install cmake ninja-build
+      
+      - name: install wasi-sdk (wasm32)
+        if: matrix.target_arch == 'wasm32'
+        run: |
+          wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
+          tar xf wasi-sdk-17.0-linux.tar.gz
+          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
 
-      - name: Cmake Configure
-        run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }}
+      - name: install wasmtime (wasm32)
+        if: matrix.target_arch == 'wasm32'
+        run: |
+          wget https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
+          tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
+          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
 
-      - name: Cmake Build
+      - name: cmake Configure (linux)
+        if: matrix.target_arch == 'linux'
+        run: CC=clang CXX=clang++ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: cmake Configure (wasm32)
+        if: matrix.target_arch == 'wasm32'
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_TOOLCHAIN_FILE=wasm32.toolchain.cmake
+
+      - name: cmake --build
         run: cmake --build build --verbose
 
-      - name: CTest
+      - name: ctest
         run: cd build && ctest --tests-regex wasmdemo --verbose
