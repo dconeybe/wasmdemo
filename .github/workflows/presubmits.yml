@@ -9,8 +9,10 @@ concurrency:
 jobs:
   build_and_test_desktop:
     name: test_${{ matrix.target_arch }}_${{ matrix.build_type }}
+    continue-on-error: false
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         build_type: ["Debug", "Release"]
         target_arch: ["wasm32", "linux"]
@@ -23,34 +25,42 @@ jobs:
           python-version: 3.9
 
       - name: apt-get install prerequisites
+        shell: bash
         run: sudo apt-get install cmake ninja-build ccache
 
       - name: ccache setup
+        shell: bash
         run: |
-          echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >>${GITHUB_ENV}
-          echo "CCACHE_DIR=${GITHUB_WORKSPACE}/ccache_cache" >>${GITHUB_ENV}
-          echo "CCACHE_COMPILERCHECK=content" >>${GITHUB_ENV}
-          echo "CCACHE_COMPRESS=1" >>${GITHUB_ENV}
-          echo "CCACHE_COMPRESSLEVEL=-1" >>${GITHUB_ENV}
-          echo "CCACHE_MAXSIZE=200M" >>${GITHUB_ENV}
-          ccache --show-config
+          echo "CCACHE_BASEDIR=${{ github.workspace }}" >>${{ github.env }}
+          echo "CCACHE_DIR=${{ github.workspace }}/ccache_cache" >>${{ github.env }}
+          echo "CCACHE_COMPILERCHECK=content" >>${{ github.env }}
+          echo "CCACHE_COMPRESS=1" >>${{ github.env }}
+          echo "CCACHE_COMPRESSLEVEL=-1" >>${{ github.env }}
+          echo "CCACHE_MAXSIZE=200M" >>${{ github.env }}
+      
+      - name: ccache --show-config
+        shell: bash
+        run: ccache --show-config
 
       - name: install wasi-sdk (wasm32)
         if: matrix.target_arch == 'wasm32'
+        shell: bash
         run: |
           wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
           tar xf wasi-sdk-17.0-linux.tar.gz
-          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
+          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${{ github.env }}
 
       - name: install wasmtime (wasm32)
         if: matrix.target_arch == 'wasm32'
+        shell: bash
         run: |
           wget https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
           tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
-          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
+          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${{ github.env }}
 
       - name: cmake Configure (linux)
         if: matrix.target_arch == 'linux'
+        shell: bash
         run: |
           export CC=clang CXX=clang++
           cmake \
@@ -63,6 +73,7 @@ jobs:
 
       - name: cmake Configure (wasm32)
         if: matrix.target_arch == 'wasm32'
+        shell: bash
         run: |
           cmake \
             -S . \
@@ -74,12 +85,15 @@ jobs:
             -G Ninja
 
       - name: cmake --build
+        shell: bash
         run: cmake --build build --verbose
 
       - name: ctest
+        shell: bash
         run: cd build && ctest --tests-regex wasmdemo --verbose
 
       - name: ccache statistics
+        shell: bash
         run: |
           ccache --show-stats -v -v
           ccache --show-config
