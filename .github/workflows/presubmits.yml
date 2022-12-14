@@ -60,25 +60,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          cd ${{ runner.temp }}
-
           wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-17/wasi-sdk-17.0-linux.tar.gz
           tar xf wasi-sdk-17.0-linux.tar.gz
-          export WASM32_CLANG_ROOT="${{ runner.temp }}/wasi-sdk-17.0"
-          if [[ ! -e ${WASM32_CLANG_ROOT} ]] ; then
-            echo "ERROR: WASM32_CLANG_ROOT not found: ${WASM32_CLANG_ROOT}" >&2
-            exit 1
-          fi
-          echo "WASM32_CLANG_ROOT=${WASM32_CLANG_ROOT}" >>${GITHUB_ENV}
+          echo "WASM32_CLANG_ROOT=$(readlink -f wasi-sdk-17.0)" >>${GITHUB_ENV}
 
           wget https://github.com/bytecodealliance/wasmtime/releases/download/v3.0.1/wasmtime-v3.0.1-x86_64-linux.tar.xz
           tar xf wasmtime-v3.0.1-x86_64-linux.tar.xz
-          export WASMDEMO_WASMTIME_EXECUTABLE="${{ runner.temp }}/wasmtime-v3.0.1-x86_64-linux/wasmtime"
-          if [[ ! -e ${WASMDEMO_WASMTIME_EXECUTABLE} ]] ; then
-            echo "ERROR: WASMDEMO_WASMTIME_EXECUTABLE not found: ${WASMDEMO_WASMTIME_EXECUTABLE}" >&2
-            exit 1
-          fi
-          echo "WASMDEMO_WASMTIME_EXECUTABLE=${WASMDEMO_WASMTIME_EXECUTABLE}" >>${GITHUB_ENV}
+          echo "WASMDEMO_WASMTIME_EXECUTABLE=$(readlink -f wasmtime-v3.0.1-x86_64-linux/wasmtime)" >>${GITHUB_ENV}
 
       - name: cmake Configure (linux)
         if: matrix.target_arch == 'linux'
