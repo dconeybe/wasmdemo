@@ -40,4 +40,9 @@ extern void MD5_Init(MD5_CTX *ctx);
 extern void MD5_Update(MD5_CTX *ctx, const void *data, unsigned int size);
 extern void MD5_Final(unsigned char *result, MD5_CTX *ctx);
 
+#include "wasmdemo/macros.h"
+
+WASM_EXPORT("hash")
+unsigned char* hash(const char *str, unsigned int size);
+
 #endif  // WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_HASH_H_

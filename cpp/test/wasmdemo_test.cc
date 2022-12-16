@@ -1,6 +1,8 @@
 #include <string>
 
 #include "wasmdemo/wasmdemo.h"
+#include "wasmdemo/hash.h"
+#include "wasmdemo/bloom.h"
 
 #include "wasmdemo_imports_impl.h"
 
@@ -10,6 +12,7 @@
 namespace {
 
 using testing::ElementsAre;
+using testing::Not;
 
 TEST(wasmdemo, reverse_string_ShouldHandleEmptyString) {
   std::string s;
@@ -74,6 +77,24 @@ TEST(wasmdemo, add) {
   EXPECT_EQ(add(-1, -1), -2);
   EXPECT_EQ(add(123, 456), 579);
   EXPECT_EQ(add(-123, 456), 333);
+}
+
+TEST(wasmdemo, hash_ShouldHaveExpectedEmptyStringHash) {
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("", 0));
+  std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
+  ASSERT_THAT(obtainedHash, ElementsAre(0xd41d8cd98f00b204, 0xe9800998ecf8427e));
+}
+
+TEST(wasmdemo, hash_ShouldNotHaveZeroEmptyStringHash) {
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("", 0));
+  std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
+  ASSERT_THAT(obtainedHash, Not(ElementsAre(0, 0)));
+}
+
+TEST(wasmdemo, hash_ShouldHaveExpectedAbcStringHash) {
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("abc", 0));
+  std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
+  ASSERT_THAT(obtainedHash, ElementsAre(0x900150983cd24fb0, 0xd6963f7d28e17f72));
 }
 
 } // namespace
