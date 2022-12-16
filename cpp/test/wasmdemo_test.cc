@@ -80,21 +80,36 @@ TEST(wasmdemo, add) {
 }
 
 TEST(wasmdemo, hash_ShouldHaveExpectedEmptyStringHash) {
-  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("", 0));
+  std::string empty("");
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash(empty.data(), 0));
   std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
   ASSERT_THAT(obtainedHash, ElementsAre(0xd41d8cd98f00b204, 0xe9800998ecf8427e));
 }
 
 TEST(wasmdemo, hash_ShouldNotHaveZeroEmptyStringHash) {
-  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("", 0));
+  std::string empty("");
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash(empty.data(), 0));
   std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
   ASSERT_THAT(obtainedHash, Not(ElementsAre(0, 0)));
 }
 
 TEST(wasmdemo, hash_ShouldHaveExpectedAbcStringHash) {
-  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash("abc", 0));
+  std::string abc("abc");
+  auto* obtainedHashPtr = reinterpret_cast<uint64_t*>(hash(abc.data(), abc.length()));
   std::vector<uint64_t> obtainedHash(obtainedHashPtr, obtainedHashPtr + 2);
   ASSERT_THAT(obtainedHash, ElementsAre(0x900150983cd24fb0, 0xd6963f7d28e17f72));
+}
+
+TEST(wasmdemo, hash_ShouldHaveExpectedHashAfterMultipleHashes) {
+  std::string empty("");
+  auto* obtainedHashPtr1 = reinterpret_cast<uint64_t*>(hash(empty.data(), 0));
+  std::vector<uint64_t> obtainedHash1(obtainedHashPtr1, obtainedHashPtr1 + 2);
+  EXPECT_THAT(obtainedHash1, ElementsAre(0xd41d8cd98f00b204, 0xe9800998ecf8427e));
+
+  std::string abc("abc");
+  auto* obtainedHashPtr2 = reinterpret_cast<uint64_t*>(hash(abc.data(), abc.length()));
+  std::vector<uint64_t> obtainedHash2(obtainedHashPtr2, obtainedHashPtr2 + 2);
+  ASSERT_THAT(obtainedHash2, ElementsAre(0x900150983cd24fb0, 0xd6963f7d28e17f72));
 }
 
 } // namespace
