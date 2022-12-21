@@ -69,6 +69,7 @@ endif()
 if(BUILD_TESTING)
   add_executable(
     wasmdemo_test
+    test/hash_test.cc
     test/wasmdemo_imports_impl.cc
     test/wasmdemo_test.cc
   )
