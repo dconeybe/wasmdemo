@@ -10,7 +10,7 @@ namespace {
 using testing::ElementsAre;
 using testing::Not;
 
-// Returns the hex character for the lower 8 bits of the given value.
+// Returns the hex character for the lower 4 bits of the given value.
 // e.g. '0', '8', 'B', and 'F'.
 char hex_char_from_lower_4bits(unsigned char c) {
   switch (c & 0xF) {
