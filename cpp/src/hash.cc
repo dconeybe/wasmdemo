@@ -294,7 +294,6 @@ void MD5_Final(unsigned char *result, MD5_CTX *ctx)
 WASM_EXPORT("hash")
 unsigned char* hash(const char *str, const unsigned int size) {
   static unsigned char outputHash[16];
-  // dummy hash as a "hello world"
   static MD5_CTX hashContext;
 
   MD5_Init(&hashContext);
