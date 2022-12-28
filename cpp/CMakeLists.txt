@@ -8,6 +8,7 @@ add_library(
   src/wasmdemo.cc
   src/hash.cc
   src/bloom.cc
+  src/base64.cc
 )
 
 target_compile_options(
