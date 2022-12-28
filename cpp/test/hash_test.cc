@@ -7,9 +7,6 @@
 
 namespace {
 
-using testing::ElementsAre;
-using testing::Not;
-
 // Returns the hex character for the lower 4 bits of the given value.
 // e.g. '0', '8', 'B', and 'F'.
 char hex_char_from_lower_4bits(unsigned char c) {
@@ -75,6 +72,20 @@ TEST(wasmdemo, hash_ShouldHaveExpectedAbcStringHash) {
 }
 
 TEST(wasmdemo, hash_ShouldHaveExpectedLongStringHash) {
+  char data[1024];
+  for (int i=0; i<static_cast<int>(sizeof(data)); i++) {
+    data[i] = static_cast<char>(i);
+  }
+  unsigned char* hash_result = hash(data, sizeof(data));
+  const std::string hash_result_hex = hex_digest_from_hash_result(hash_result);
+  EXPECT_EQ(hash_result_hex, "B2EA9F7FCEA831A4A63B213F41A8855B");
+}
+
+// `hash` is backed by a struct that is shared between function calls.
+// If hash is buggy, old hashes could affect new ones.
+TEST(wasmdemo, hash_ShouldHaveExpectedHashAfterPreviousDifferentHash) {
+  unsigned char* unusedHash = hash("abc", 3);
+
   char data[1024];
   for (int i=0; i<static_cast<int>(sizeof(data)); i++) {
     data[i] = static_cast<char>(i);
