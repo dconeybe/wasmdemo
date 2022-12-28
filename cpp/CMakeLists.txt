@@ -73,6 +73,7 @@ if(BUILD_TESTING)
     test/hash_test.cc
     test/wasmdemo_imports_impl.cc
     test/wasmdemo_test.cc
+    test/bloom_test.cc
   )
 
   target_include_directories(
