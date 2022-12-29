@@ -17,7 +17,7 @@ BloomFilter::~BloomFilter(){
   free(_bitmap);
 }
 
-bool BloomFilter::mightContain(char* value, uint32_t valueLength) {
+bool BloomFilter::mightContain(const char* const value, uint32_t valueLength) {
   if (_size == 0 || valueLength == 0) {
     return false;
   }
@@ -69,6 +69,6 @@ void deleteBloomFilter(BloomFilter* instance) {
 }
 
 WASM_EXPORT("mightContain")
-bool mightContain(BloomFilter* filter, char* value, int32_t valueLength) {
+bool mightContain(BloomFilter* filter, char const* value, int32_t valueLength) {
   return filter->mightContain(value, static_cast<uint32_t>(valueLength));
 }

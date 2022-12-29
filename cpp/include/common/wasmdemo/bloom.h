@@ -9,7 +9,7 @@ class BloomFilter {
 
   ~BloomFilter();
 
-  bool mightContain(char* value, uint32_t valueLength);
+  bool mightContain(const char* value, uint32_t valueLength);
 
  private:
   uint64_t _size;
@@ -28,6 +28,6 @@ WASM_EXPORT("deleteBloomFilter")
 void deleteBloomFilter(BloomFilter* instance);
 
 WASM_EXPORT("mightContain")
-bool mightContain(BloomFilter* filter, char* value, int32_t valueLength);
+bool mightContain(BloomFilter* filter, const char* value, int32_t valueLength);
 
 #endif  // WASMDEMO_CPP_INCLUDE_COMMON_WASMDEMO_BLOOM_H_
