@@ -8,6 +8,7 @@ add_library(
   src/wasmdemo.cc
   src/hash.cc
   src/bloom.cc
+  src/base64.cc
 )
 
 target_compile_options(
@@ -72,6 +73,7 @@ if(BUILD_TESTING)
     test/hash_test.cc
     test/wasmdemo_imports_impl.cc
     test/wasmdemo_test.cc
+    test/bloom_test.cc
   )
 
   target_include_directories(
