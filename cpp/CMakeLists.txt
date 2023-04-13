@@ -5,10 +5,8 @@
 add_library(
   wasmdemo_lib
   OBJECT
-  src/wasmdemo.cc
-  src/hash.cc
-  src/bloom.cc
-  src/base64.cc
+  src/memory.cc
+  src/md5.cc
 )
 
 target_compile_options(
@@ -70,10 +68,9 @@ endif()
 if(BUILD_TESTING)
   add_executable(
     wasmdemo_test
-    test/hash_test.cc
-    test/wasmdemo_imports_impl.cc
-    test/wasmdemo_test.cc
-    test/bloom_test.cc
+    test/memory_test.cc
+    test/md5_test.cc
+    test/md5_testing.cc
   )
 
   target_include_directories(
